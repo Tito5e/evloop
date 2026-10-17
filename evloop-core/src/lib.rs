@@ -2,6 +2,7 @@ extern crate core;
 
 pub mod error;
 pub mod event;
+pub mod geometry;
 
 use std::time::{Duration, Instant};
 
@@ -22,6 +23,7 @@ impl ControlFlow {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
 pub enum StartCause {
     ResumeTimeReached { start: Instant, requested_resume: Instant },
     WaitCancelled { start: Instant, requested_resume: Option<Instant> },
