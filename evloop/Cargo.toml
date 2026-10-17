@@ -1,0 +1,15 @@
+[package]
+name = "evloop"
+version.workspace = true
+repository.workspace = true
+license.workspace = true
+edition.workspace = true
+
+[dependencies]
+evloop-core.workspace = true
+
+[target.'cfg(target_os = "windows")'.dependencies]
+evloop-win32.workspace = true
+
+[target.'cfg(target_os = "android")'.dependencies]
+evloop-android.workspace = true

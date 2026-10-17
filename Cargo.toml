@@ -1,0 +1,15 @@
+[workspace]
+resolver = "3"
+members = ["evloop*"]
+
+[workspace.package]
+edition = "2024"
+license = "MIT or Apache-2.0"
+repository = "https://github.com/Tito5e/evloop.git"
+version = "0.1.0"
+
+[workspace.dependencies]
+evloop = { path = "evloop" }
+evloop-core = { version = "=0.1.0", path = "evloop-core" }
+evloop-win32 = { version = "=0.1.0", path = "evloop-win32" }
+evloop-android = { version = "=0.1.0", path = "evloop-android" }

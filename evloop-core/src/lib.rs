@@ -1,0 +1,31 @@
+extern crate core;
+
+pub mod error;
+pub mod event;
+
+use std::time::{Duration, Instant};
+
+#[derive(Default)]
+pub enum ControlFlow {
+    Poll,
+    #[default]
+    Wait,
+    WaitUntil(Instant),
+}
+
+impl ControlFlow {
+    pub fn wait_duration(timeout: Duration) -> Self {
+        match Instant::now().checked_add(timeout) {
+            Some(instant) => Self::WaitUntil(instant),
+            None => Self::Wait,
+        }
+    }
+}
+
+pub enum StartCause {
+    ResumeTimeReached { start: Instant, requested_resume: Instant },
+    WaitCancelled { start: Instant, requested_resume: Option<Instant> },
+
+    Poll,
+    Init,
+}

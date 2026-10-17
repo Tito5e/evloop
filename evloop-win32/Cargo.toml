@@ -1,0 +1,6 @@
+[package]
+name = "evloop-win32"
+version.workspace = true
+repository.workspace = true
+license.workspace = true
+edition.workspace = true
