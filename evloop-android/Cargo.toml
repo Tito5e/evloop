@@ -8,5 +8,5 @@ edition.workspace = true
 [dependencies]
 evloop-core.workspace = true
 
-android-activity = "0.6.1"
+android-activity = { version = "0.6.1", features = ["native-activity"] }
 tracing = "0.1.44"
