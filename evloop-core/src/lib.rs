@@ -3,10 +3,11 @@ extern crate core;
 pub mod error;
 pub mod event;
 pub mod geometry;
+pub mod keyboard;
 
 use std::time::{Duration, Instant};
 
-#[derive(Default)]
+#[derive(Default, Copy, Clone)]
 pub enum ControlFlow {
     Poll,
     #[default]
@@ -30,4 +31,9 @@ pub enum StartCause {
 
     Poll,
     Init,
+}
+
+pub enum PumpStatus {
+    Continue,
+    Exit(i32),
 }

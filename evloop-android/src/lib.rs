@@ -6,11 +6,13 @@ pub use android_activity as activity;
 use std::cell::Cell;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::{Duration, Instant};
 use android_activity::input::{KeyAction, Keycode, MotionAction};
+use android_activity::PollEvent;
 use tracing::trace;
 use evloop_core::error::EventLoopError;
-use evloop_core::{ControlFlow, StartCause};
-use evloop_core::event::{ButtonSource, DeviceId, ElementState, FingerId, Force, PointerKind, PointerSource, WindowEvent};
+use evloop_core::{ControlFlow, PumpStatus, StartCause};
+use evloop_core::event::{ButtonSource, DeviceId, ElementState, FingerId, Force, KeyEvent, PointerKind, PointerSource, WindowEvent};
 use evloop_core::geometry::{PhysicalInsets, PhysicalPosition, PhysicalSize};
 use crate::activity::{AndroidApp, MainEvent, AndroidAppWaker, input::InputEvent, InputStatus};
 use crate::application::ApplicationHandler;
@@ -50,11 +52,16 @@ pub struct EventLoop {
     active_loop: ActiveEventLoop,
     cause: StartCause,
 
+    loop_running: bool,
+
     pending_redraw: bool,
     redraw_flag: SharedFlag,
     running: bool,
 
     primary_pointer: Option<FingerId>,
+
+    ignore_volume_keys: bool,
+    combining_accent: Option<char>,
 }
 
 impl EventLoop {
@@ -75,11 +82,16 @@ impl EventLoop {
             },
             cause: StartCause::Init,
 
+            loop_running: false,
+
             pending_redraw: false,
             redraw_flag,
             running: false,
 
             primary_pointer: None,
+
+            ignore_volume_keys: true,
+            combining_accent: None,
         })
     }
 
@@ -312,7 +324,7 @@ impl EventLoop {
                             app.window_event(&self.active_loop, event);
                         },
                         _ => unreachable!(),
-                    },
+                    }
                 }
             },
             InputEvent::KeyEvent(key) => {
@@ -366,6 +378,114 @@ impl EventLoop {
 
         input_status
     }
+
+    pub fn run_app<A: ApplicationHandler + 'static>(mut self, mut app: A) -> Result<(), EventLoopError> {
+        let result = self.run_app_on_demand(&mut app);
+        drop(app);
+        result
+    }
+
+    pub fn run_app_on_demand<A: ApplicationHandler>(&mut self, mut app: A) -> Result<(), EventLoopError> {
+        self.active_loop.clear_exit();
+        loop {
+            match self.pump_app_events(None, &mut app) {
+                PumpStatus::Exit(0) => {
+                    break Ok(());
+                },
+                PumpStatus::Exit(code) => {
+                    break Err(EventLoopError::ExitFailure(code));
+                },
+                _ => {
+                    continue;
+                }
+            }
+        }
+    }
+
+    pub fn pump_app_events<A: ApplicationHandler>(&mut self, timeout: Option<Duration>, mut app: A) -> PumpStatus {
+        if !self.loop_running {
+            self.loop_running = true;
+
+            self.pending_redraw = false;
+            self.cause = StartCause::Init;
+
+            self.single_iter(None, &mut app);
+        }
+
+        if !self.exiting() {
+            self.poll_events_with_timeout(timeout, &mut app);
+        }
+        if self.exiting() {
+            self.loop_running = false;
+
+            PumpStatus::Exit(0)
+        } else {
+            PumpStatus::Continue
+        }
+    }
+
+    fn poll_events_with_timeout<A: ApplicationHandler>(&mut self, mut timeout: Option<Duration>, app: &mut A) {
+        let start = Instant::now();
+
+        self.pending_redraw |= self.redraw_flag.get_and_reset();
+
+        timeout = if self.running && (self.pending_redraw || self.active_loop.event_loop_proxy.wake_up.load(Ordering::Relaxed)) {
+            Some(Duration::ZERO)
+        } else {
+            let control_flow_timeout = match self.control_flow() {
+                ControlFlow::Wait => None,
+                ControlFlow::Poll => Some(Duration::ZERO),
+                ControlFlow::WaitUntil(wait_deadline) => {
+                    Some(wait_deadline.saturating_duration_since(start))
+                }
+            };
+
+            min_timeout(control_flow_timeout, timeout)
+        };
+
+        let android_app = self.android_app.clone();
+        android_app.poll_events(timeout, |poll_event| {
+            let mut main_event = None;
+
+            match poll_event {
+                PollEvent::Wake => {
+                    self.pending_redraw |= self.redraw_flag.get_and_reset();
+                    if !self.running || (!self.pending_redraw && !self.active_loop.event_loop_proxy.wake_up.load(Ordering::Relaxed)) {
+                        return;
+                    }
+                },
+                PollEvent::Timeout => {},
+                PollEvent::Main(event) => {
+                    main_event = Some(event);
+                },
+                unknown_event => {
+                    // TODO: Handling
+                }
+            }
+
+            self.cause = match self.control_flow() {
+                ControlFlow::Poll => StartCause::Poll,
+                ControlFlow::Wait => StartCause::WaitCancelled { start, requested_resume: None },
+                ControlFlow::WaitUntil(deadline) => {
+                    if Instant::now() < deadline {
+                        StartCause::WaitCancelled { start, requested_resume: Some(deadline) }
+                    } else {
+                        StartCause::ResumeTimeReached { start, requested_resume: deadline }
+                    }
+                }
+            };
+
+            self.single_iter(main_event, app);
+        })
+    }
+
+    fn control_flow(&self) -> ControlFlow {
+        self.active_loop.control_flow()
+    }
+
+    fn exiting(&self) -> bool {
+        self.active_loop.exiting()
+    }
 }
 
 pub struct ActiveEventLoop {
@@ -375,9 +495,29 @@ pub struct ActiveEventLoop {
     event_loop_proxy: Arc<EventLoopProxy>,
 }
 
+impl ActiveEventLoop {
+    fn clear_exit(&self) {
+        self.exit.set(false);
+    }
+
+    fn control_flow(&self) -> ControlFlow {
+        self.control_flow.get()
+    }
+
+    fn exiting(&self) -> bool {
+        self.exit.get()
+    }
+}
+
 pub struct EventLoopProxy {
     wake_up: AtomicBool,
     waker: AndroidAppWaker,
+}
+
+impl EventLoopProxy {
+    fn new(waker: AndroidAppWaker) -> Self {
+        Self { wake_up: AtomicBool::new(false), waker }
+    }
 }
 
 pub struct EventLoopAttributes {
@@ -403,4 +543,8 @@ fn content_rect(app: &AndroidApp) -> PhysicalInsets {
 
 fn scale_factor(app: &AndroidApp) -> f64 {
     app.config().density().map(|dpi| dpi as f64 / 160.).unwrap_or(1.0)
+}
+
+fn min_timeout(a: Option<Duration>, b: Option<Duration>) -> Option<Duration> {
+    a.map_or(b, |a_timeout| b.map_or(Some(a_timeout), |b_timeout| Some(a_timeout.min(b_timeout))))
 }

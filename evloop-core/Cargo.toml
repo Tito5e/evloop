@@ -6,3 +6,5 @@ license.workspace = true
 edition.workspace = true
 
 [dependencies]
+keyboard-types = { version = "0.8.3" }
+smol_str = "0.3.6"

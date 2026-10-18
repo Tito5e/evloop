@@ -1,4 +1,6 @@
+use smol_str::SmolStr;
 use crate::geometry::{PhysicalInsets, PhysicalPosition, PhysicalSize};
+use crate::keyboard::{Key, KeyLocation, PhysicalKey};
 
 pub enum WindowEvent {
     ContentRectChanged(PhysicalInsets),
@@ -31,7 +33,23 @@ pub enum WindowEvent {
         position: Option<PhysicalPosition>,
         primary: bool,
         kind: PointerKind,
+    },
+    KeyboardInput {
+        device_id: Option<DeviceId>,
+        event: KeyEvent,
+        is_synthetic: bool,
     }
+}
+
+pub struct KeyEvent {
+    pub physical_key: PhysicalKey,
+    pub logical_key: Key,
+    pub text: Option<SmolStr>,
+    pub location: KeyLocation,
+    pub state: ElementState,
+    pub repeat: bool,
+    pub text_with_all_modifiers: Option<SmolStr>,
+    pub key_without_modifiers: Key,
 }
 
 pub enum PointerKind {
@@ -108,6 +126,7 @@ impl DeviceId {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum ElementState {
     Pressed,
     Released,
