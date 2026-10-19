@@ -1,3 +1,5 @@
+pub use evloop_core::*;
+
 use std::marker::PhantomData;
 
 use evloop_core::error::EventLoopError;
