@@ -17,14 +17,21 @@ pub struct OsError {
 }
 
 impl OsError {
-    pub fn new(line: u32, file: &'static str, error: Box<dyn Error + Send + Sync + 'static>) -> Self {
+    pub fn new(
+        line: u32,
+        file: &'static str,
+        error: Box<dyn Error + Send + Sync + 'static>,
+    ) -> Self {
         Self { line, file, error }
     }
 }
 
 impl fmt::Display for OsError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.pad(&format!("os error at {}:{}: {}", self.file, self.line, self.error))
+        f.pad(&format!(
+            "os error at {}:{}: {}",
+            self.file, self.line, self.error
+        ))
     }
 }
 

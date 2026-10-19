@@ -1,6 +1,6 @@
-use smol_str::SmolStr;
 use crate::geometry::{PhysicalInsets, PhysicalPosition, PhysicalSize};
 use crate::keyboard::{Key, KeyLocation, PhysicalKey};
+use smol_str::SmolStr;
 
 pub enum WindowEvent {
     ContentRectChanged(PhysicalInsets),
@@ -26,7 +26,7 @@ pub enum WindowEvent {
         device_id: Option<DeviceId>,
         position: PhysicalPosition,
         primary: bool,
-        source: PointerSource
+        source: PointerSource,
     },
     PointerLeft {
         device_id: Option<DeviceId>,
@@ -38,7 +38,7 @@ pub enum WindowEvent {
         device_id: Option<DeviceId>,
         event: KeyEvent,
         is_synthetic: bool,
-    }
+    },
 }
 
 pub struct KeyEvent {
@@ -61,15 +61,28 @@ pub enum PointerKind {
 
 pub enum PointerSource {
     Mouse,
-    Touch { finger_id: FingerId, force: Option<Force> },
-    TabletTool { kind: TabletToolKind, data: TabletToolData },
+    Touch {
+        finger_id: FingerId,
+        force: Option<Force>,
+    },
+    TabletTool {
+        kind: TabletToolKind,
+        data: TabletToolData,
+    },
     Unknown,
 }
 
 pub enum ButtonSource {
     Mouse(MouseButton),
-    Touch { finger_id: FingerId, force: Option<Force> },
-    TabletTool { kind: TabletToolKind, button: TabletToolButton, data: TabletToolData },
+    Touch {
+        finger_id: FingerId,
+        force: Option<Force>,
+    },
+    TabletTool {
+        kind: TabletToolKind,
+        button: TabletToolButton,
+        data: TabletToolData,
+    },
     Unknown(u16),
 }
 
@@ -110,8 +123,7 @@ pub struct TabletToolAngle {
     pub azimuth: f64,
 }
 
-pub enum DeviceEvent {
-}
+pub enum DeviceEvent {}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct DeviceId(i64);
@@ -181,24 +193,29 @@ impl FingerId {
 }
 
 pub enum Force {
-    Calibrated {
-        force: f64,
-        max_possible_force: f64,
-    },
+    Calibrated { force: f64, max_possible_force: f64 },
     Normalized(f64),
 }
 
 impl Force {
     pub fn normalized(&self, angle: Option<TabletToolAngle>) -> f64 {
         match self {
-            Force::Calibrated { force, max_possible_force} => {
+            Force::Calibrated {
+                force,
+                max_possible_force,
+            } => {
                 let force = match angle {
                     Some(TabletToolAngle { altitude, .. }) => force / altitude.sin(),
                     None => *force,
                 };
                 force / max_possible_force
-            },
+            }
             Force::Normalized(force) => *force,
         }
     }
+}
+
+pub enum EvloopEvent {
+    ProxyWakeUp,
+    MemoryWarning,
 }
