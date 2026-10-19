@@ -6,6 +6,7 @@ pub mod error;
 pub mod event;
 pub mod event_loop;
 pub mod geometry;
+pub mod ime;
 pub mod keyboard;
 
 use std::time::{Duration, Instant};

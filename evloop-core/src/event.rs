@@ -39,6 +39,7 @@ pub enum WindowEvent {
         event: KeyEvent,
         is_synthetic: bool,
     },
+    RedrawRequested,
 }
 
 pub struct KeyEvent {

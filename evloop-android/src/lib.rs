@@ -2,6 +2,7 @@ pub mod application;
 pub mod capability;
 pub mod keycodes;
 pub mod lifecycle;
+pub mod window;
 
 pub use android_activity as activity;
 use android_activity::ndk::configuration::UiModeNight;
@@ -30,6 +31,7 @@ use tracing::trace;
 
 static HAS_FOCUS: AtomicBool = AtomicBool::new(true);
 
+#[derive(Clone)]
 struct SharedFlagSetter {
     flag: Arc<AtomicBool>,
 }
@@ -61,6 +63,27 @@ impl SharedFlag {
 
     fn get_and_reset(&self) -> bool {
         self.flag.swap(false, Ordering::AcqRel)
+    }
+}
+
+#[derive(Clone)]
+struct RedrawRequester {
+    flag: SharedFlagSetter,
+    waker: AndroidAppWaker,
+}
+
+impl RedrawRequester {
+    fn new(flag: &SharedFlag, waker: AndroidAppWaker) -> Self {
+        Self {
+            flag: flag.setter(),
+            waker,
+        }
+    }
+
+    fn request_redraw(&self) {
+        if self.flag.set() {
+            self.waker.wake();
+        }
     }
 }
 
@@ -98,6 +121,7 @@ impl EventLoop {
                 app: android_app.clone(),
                 control_flow: Cell::new(ControlFlow::default()),
                 exit: Cell::new(false),
+                redraw_requester: RedrawRequester::new(&redraw_flag, android_app.create_waker()),
                 event_loop_proxy,
             },
             cause: StartCause::Init,
@@ -176,7 +200,9 @@ impl EventLoop {
                     let event = WindowEvent::Occluded(false);
                     app.window_event(&self.active_loop, event);
                 }
-                MainEvent::Resume { loader, .. } => {
+                MainEvent::Resume {
+                    loader: _loader, ..
+                } => {
                     app.resumed(&self.active_loop);
                 }
                 MainEvent::SaveState { .. } => {}
@@ -208,7 +234,7 @@ impl EventLoop {
                     break;
                 }
             },
-            Err(err) => {}
+            Err(_err) => {}
         }
 
         if self
@@ -235,7 +261,17 @@ impl EventLoop {
             }
 
             pending_redraw |= self.redraw_flag.get_and_reset();
+
+            if pending_redraw {
+                pending_redraw = false;
+                let event = WindowEvent::RedrawRequested;
+                app.window_event(&self.active_loop, event);
+            }
         }
+
+        app.exit_events(&self.active_loop);
+
+        self.pending_redraw = pending_redraw;
     }
 
     fn handle_input_event<A: ApplicationHandler>(
@@ -568,6 +604,7 @@ pub struct ActiveEventLoop {
     app: AndroidApp,
     control_flow: Cell<ControlFlow>,
     exit: Cell<bool>,
+    redraw_requester: RedrawRequester,
     event_loop_proxy: Arc<EventLoopProxy>,
 }
 
