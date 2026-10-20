@@ -64,6 +64,10 @@ impl Window {
 	pub fn request_redraw(&self) {
 		self.redraw_requester.request_redraw()
 	}
+
+	pub fn scale_factor(&self) -> f64 {
+		scale_factor(&self.app)
+	}
 }
 
 fn screen_size(app: &AndroidApp) -> PhysicalSize {
