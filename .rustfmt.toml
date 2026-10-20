@@ -1,0 +1,10 @@
+edition = "2024"
+
+max_width = 100
+group_imports = "StdExternalCrate"
+reorder_imports = true
+reorder_modules = true
+use_small_heuristics = "Max"
+tab_spaces = 4
+hard_tabs = true
+reorder_impl_items = true
