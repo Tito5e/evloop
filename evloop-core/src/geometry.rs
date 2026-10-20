@@ -12,6 +12,7 @@ pub struct LogicalInsets {
     pub right: f64,
 }
 
+#[derive(Debug)]
 pub struct PhysicalSize {
     pub width: u32,
     pub height: u32,

@@ -1,4 +1,6 @@
-use crate::{ControlFlow, Platform, Theme, event_loop::DeviceEventStrategy};
+use crate::{Platform, event_loop::DeviceEventStrategy};
+use crate::event_loop::ControlFlow;
+use crate::window::Theme;
 
 pub trait CanCreateWindow {}
 

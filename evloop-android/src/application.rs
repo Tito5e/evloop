@@ -1,6 +1,6 @@
 use crate::lifecycle::{Paused, Resumed, Running, Started, Stopped, SurfaceAvailable, SurfaceLost};
-use evloop_core::StartCause;
 use evloop_core::event::{EvloopEvent, WindowEvent};
+use evloop_core::event_loop::StartCause;
 
 pub trait ApplicationHandler {
     fn started(&mut self, event_loop: &impl Started, cause: StartCause);
