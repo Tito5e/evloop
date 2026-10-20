@@ -18,7 +18,7 @@ use evloop_core::event::{
 	ButtonSource, DeviceId, ElementState, EvloopEvent, FingerId, Force, KeyEvent, PointerKind,
 	PointerSource, WindowEvent,
 };
-use evloop_core::event_loop::{ControlFlow, StartCause};
+use evloop_core::event_loop::{ControlFlow, PumpStatus, StartCause};
 use evloop_core::geometry::{PhysicalPosition, PhysicalSize};
 use evloop_core::window::Theme;
 use std::cell::Cell;
