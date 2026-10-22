@@ -19,8 +19,8 @@ use evloop_core::event::{
 	PointerSource, WindowEvent,
 };
 use evloop_core::event_loop::{ControlFlow, PumpStatus, StartCause};
-use evloop_core::geometry::{PhysicalPosition, PhysicalSize};
 use evloop_core::window::Theme;
+use geometry_types::{PhysicalPosition, PhysicalSize};
 use std::cell::Cell;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -532,7 +532,8 @@ impl EventLoopBuilder {
 	#[inline]
 	pub fn build(&mut self, app: AndroidApp) -> Result<EventLoop, EventLoopError> {
 		self.attributes.android_app = Some(app);
-		Ok(EventLoop::new(&self.attributes)?)
+
+		EventLoop::new(&self.attributes)
 	}
 }
 
@@ -552,7 +553,7 @@ impl ActiveEventLoop {
 
 impl CanGetWindow for ActiveEventLoop {
 	fn get_window(&self) -> Result<Window, CreateWindowError> {
-		Ok(Window::new(self)?)
+		Window::new(self)
 	}
 }
 

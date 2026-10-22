@@ -8,11 +8,12 @@ edition.workspace = true
 [dependencies]
 evloop-core.workspace = true
 
-bitflags = { version = "2.13.2" }
-raw-window-handle = { version = "0.6.2" }
-smol_str = { version = "0.3.6" }
-tracing = { version = "0.1.44" }
+geometry-types.workspace = true
+raw-window-handle.workspace = true
+tracing.workspace = true
 
+bitflags = { version = "2.13.2" }
+smol_str = { version = "0.3.6" }
 unicode-segmentation = { version = "1.13.3" }
 windows-sys = { version = "0.61.2", features = [
     "Win32_Devices_HumanInterfaceDevice",

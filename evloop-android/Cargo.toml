@@ -8,7 +8,9 @@ edition.workspace = true
 [dependencies]
 evloop-core.workspace = true
 
+raw-window-handle.workspace = true
+geometry-types.workspace = true
+
 android-activity = { version = "0.6.1", features = ["native-activity"] }
 tracing = "0.1.44"
 smol_str = "0.3.6"
-raw-window-handle = "0.6.2"

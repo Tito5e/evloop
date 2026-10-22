@@ -3,8 +3,8 @@ use std::sync::Mutex;
 use crate::RedrawRequester;
 use crate::event_loop::ActiveEventLoop;
 use android_activity::{AndroidApp, ConfigurationRef, Rect};
-use evloop_core::geometry::PhysicalSize;
 use evloop_core::{error::CreateWindowError, ime::ImeCapabilities};
+use geometry_types::PhysicalSize;
 use raw_window_handle::{
 	AndroidDisplayHandle, AndroidNdkWindowHandle, DisplayHandle, HandleError, HasDisplayHandle,
 	HasWindowHandle, RawDisplayHandle, RawWindowHandle, WindowHandle,

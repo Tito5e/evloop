@@ -13,3 +13,7 @@ evloop = { path = "evloop" }
 evloop-core = { version = "=0.1.0", path = "evloop-core" }
 evloop-win32 = { version = "=0.1.0", path = "evloop-win32" }
 evloop-android = { version = "=0.1.0", path = "evloop-android" }
+
+raw-window-handle = { version = "0.6.2" }
+tracing = { version = "0.1.44" }
+geometry-types = { version = "0.4.0" }
