@@ -1,14 +1,22 @@
-pub(crate) mod area;
-pub(crate) mod attributes;
-pub(crate) mod flags;
-pub(crate) mod state;
+pub(super) mod area;
+pub(super) mod attributes;
+pub(super) mod dwm;
+pub(super) mod flags;
+pub(super) mod fullscreen;
+pub(super) mod placement;
+pub(super) mod state;
+pub(super) mod taskbar;
+pub(super) mod r#type;
 
 use std::{
 	mem,
 	sync::{Arc, Mutex, MutexGuard},
 };
 
-use evloop_core::error::CreateWindowError;
+use evloop_core::{
+	dpi::{Position, Size},
+	error::CreateWindowError,
+};
 use geometry_types::PhysicalPosition;
 use windows_sys::Win32::{
 	Foundation::{HWND, LPARAM, POINT, POINTS, WPARAM},
@@ -21,7 +29,7 @@ use windows_sys::Win32::{
 		Gdi::{ClientToScreen, ScreenToClient},
 	},
 	UI::{
-		Input::KeyboardAndMouse::ReleaseCapture,
+		Input::KeyboardAndMouse::{EnableWindow, ReleaseCapture},
 		WindowsAndMessaging::{
 			EnableMenuItem, GWLP_HINSTANCE, GetCursorPos, GetParent, GetSystemMenu,
 			MENU_ITEM_STATE, MF_BYCOMMAND, MFS_DISABLED, MFS_ENABLED, PostMessageW, SC_CLOSE,
@@ -33,8 +41,16 @@ use windows_sys::Win32::{
 };
 
 use crate::{
+	monitor::Fullscreen,
+	resource::icon::{Icon, IconType},
 	sys::message_id::DESTROY_MSG_ID,
-	window::{attributes::WindowAttributes, flags::WindowFlags, state::WindowState},
+	window::{
+		attributes::WindowAttributes,
+		dwm::{BackdropType, Color, CornerPreference},
+		flags::WindowFlags,
+		state::WindowState,
+		taskbar::set_skip_taskbar,
+	},
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -226,9 +242,9 @@ impl Window {
 			let point = {
 				let mut point = POINT { x: 0, y: 0 };
 				let scale_factor = self.scale_factor();
-				let (x, y) = position.to_physical::<i32>(scale_factor).into();
-				point.x = x;
-				point.y = y;
+				let position = position.to_physical(scale_factor);
+				point.x = position.x;
+				point.y = position.y;
 				if ClientToScreen(self.hwnd(), &mut point) == false.into() {
 					tracing::warn!(
 						"Can't convert client-area coordinates to screen coordinates when showing \
@@ -344,32 +360,19 @@ impl Window {
 		self.window_state_lock().use_system_wheel_speed = should_use;
 	}
 
-	fn set_icon(&self, mut new_icon: Icon, icon_type: IconType) {
-		if let Some(icon) = new_icon.cast_ref::<RgbaIcon>() {
-			let icon = match WinIcon::from_rgba(icon) {
-				Ok(icon) => icon,
-				Err(err) => {
-					tracing::warn!("{}", err);
-					return;
-				}
-			};
-			new_icon = Icon(Arc::new(icon));
+	fn set_icon(&self, new_icon: Icon, icon_type: IconType) {
+		unsafe {
+			SendMessageW(
+				self.hwnd(),
+				WM_SETICON,
+				icon_type as usize,
+				new_icon.as_raw_handle() as isize,
+			);
 		}
 
-		if let Some(icon) = new_icon.cast_ref::<WinIcon>() {
-			unsafe {
-				SendMessageW(
-					self.hwnd(),
-					WM_SETICON,
-					icon_type as usize,
-					icon.as_raw_handle() as isize,
-				);
-			}
-
-			match icon_type {
-				IconType::Small => self.window_state_lock().window_icon = Some(new_icon),
-				IconType::Big => self.window_state_lock().taskbar_icon = Some(new_icon),
-			}
+		match icon_type {
+			IconType::Small => self.window_state_lock().window_icon = Some(new_icon),
+			IconType::Big => self.window_state_lock().taskbar_icon = Some(new_icon),
 		}
 	}
 

@@ -1,7 +1,7 @@
 use core::fmt;
 use std::{io, mem, path::Path, ptr, sync::Arc};
 
-use evloop_core::icon::{BadIcon, RgbaIcon};
+use evloop_core::resource::{BadIcon, RgbaIcon};
 use geometry_types::PhysicalSize;
 use windows_sys::{
 	Win32::UI::WindowsAndMessaging::{

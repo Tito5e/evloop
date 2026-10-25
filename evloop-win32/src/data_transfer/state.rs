@@ -11,6 +11,7 @@ use std::{
 use evloop_core::{
 	data_transfer::{DataTransferId, DndAction},
 	error::TransferError,
+	window::WindowId,
 };
 use windows_sys::Win32::{
 	Foundation::{CLIPBRD_E_CANT_OPEN, S_OK},

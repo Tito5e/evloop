@@ -32,8 +32,8 @@ use crate::sys::{
 
 #[derive(Clone)]
 pub struct VideoModeHandle {
-	mode: VideoMode,
-	native_video_mode: Box<DEVMODEW>,
+	pub(crate) mode: VideoMode,
+	pub(crate) native_video_mode: Box<DEVMODEW>,
 }
 
 impl PartialEq for VideoModeHandle {
@@ -237,4 +237,13 @@ impl MonitorHandle {
 	pub fn video_modes(&self) -> impl Iterator<Item = VideoMode> {
 		self.video_mode_handles().map(|mode| mode.mode)
 	}
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum Fullscreen {
+	Exclusive(MonitorHandle, VideoMode),
+
+	/// Providing `None` to `Borderless` will fullscreen on the current monitor.
+	Borderless(Option<MonitorHandle>),
 }

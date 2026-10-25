@@ -1,6 +1,8 @@
 #![allow(non_snake_case, non_upper_case_globals)]
 
+pub(crate) mod apartment;
 pub(crate) mod ole;
+pub(crate) mod shell;
 pub(crate) mod stg_medium;
 
 use std::ffi::c_void;
@@ -20,7 +22,7 @@ pub struct IUnknownVTable {
 	pub Release: unsafe extern "system" fn(This: *mut IUnknown) -> u32,
 }
 
-pub(crate) fn guids_eq(a: &GUID, b: &GUID) -> bool {
+pub(super) fn guids_eq(a: &GUID, b: &GUID) -> bool {
 	a.data1 == b.data1 && a.data2 == b.data2 && a.data3 == b.data3 && a.data4 == b.data4
 }
 

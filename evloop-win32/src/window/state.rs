@@ -2,7 +2,11 @@ use core::fmt;
 use std::{io, sync::MutexGuard};
 
 use bitflags::bitflags;
-use evloop_core::window::Theme;
+use evloop_core::{
+	dpi::Size,
+	ime::ImeCapabilities,
+	window::{Theme, WindowPositioner},
+};
 use geometry_types::{PhysicalPosition, PhysicalSize};
 use windows_sys::Win32::{
 	Foundation::{HWND, RECT},
@@ -10,6 +14,7 @@ use windows_sys::Win32::{
 };
 
 use crate::{
+	monitor::Fullscreen,
 	resource::{cursor::SelectedCursor, icon::Icon},
 	sys::{
 		cursor_control::{
@@ -17,7 +22,9 @@ use crate::{
 		},
 		window_query::{get_desktop_rect, is_focused},
 	},
-	window::{area::WindowArea, flags::WindowFlags},
+	window::{
+		area::WindowArea, attributes::WindowAttributes, flags::WindowFlags, r#type::WindowType,
+	},
 };
 
 #[derive(Debug)]
@@ -68,7 +75,6 @@ pub(crate) struct WindowState {
 impl WindowState {
 	pub(crate) fn new(
 		attributes: &WindowAttributes,
-		_win_attributes: &WindowAttributesWindows,
 		scale_factor: f64,
 		current_theme: Theme,
 		preferred_theme: Option<Theme>,
@@ -81,12 +87,12 @@ impl WindowState {
 				last_position: None,
 			},
 
-			min_size: attributes.min_surface_size,
-			max_size: attributes.max_surface_size,
+			min_size: attributes.min_inner_size,
+			max_size: attributes.max_inner_size,
 
 			surface_size: PhysicalSize::new(0, 0),
 
-			surface_resize_increments: attributes.surface_resize_increments,
+			surface_resize_increments: attributes.resize_increments,
 
 			window_icon: attributes.window_icon.clone(),
 			taskbar_icon: None,
