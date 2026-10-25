@@ -16,4 +16,4 @@ evloop-android = { version = "=0.1.0", path = "evloop-android" }
 
 raw-window-handle = { version = "0.6.2" }
 tracing = { version = "0.1.44" }
-geometry-types = { version = "0.4.0" }
+geometry-types = { version = "0.5.0" }

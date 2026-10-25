@@ -12,6 +12,8 @@ geometry-types.workspace = true
 raw-window-handle.workspace = true
 tracing.workspace = true
 
+percent-encoding = { version = "2.3.2" }
+cursor-icon = "1.2.0"
 bitflags = { version = "2.13.2" }
 smol_str = { version = "0.3.6" }
 unicode-segmentation = { version = "1.13.3" }
