@@ -1,7 +1,26 @@
 use core::fmt;
-use std::num::{NonZeroU16, NonZeroU32};
+use std::{
+	borrow::Cow,
+	num::{NonZeroU16, NonZeroU32},
+};
 
-use geometry_types::PhysicalSize;
+use geometry_types::{PhysicalPosition, PhysicalSize};
+
+pub trait MonitorHandle: fmt::Debug + Send + Sync {
+	fn id(&self) -> u128;
+
+	fn native_id(&self) -> u64;
+
+	fn name(&self) -> Option<Cow<'_, str>>;
+
+	fn position(&self) -> Option<PhysicalPosition>;
+
+	fn scale_factor(&self) -> f64;
+
+	fn current_video_mode(&self) -> Option<VideoMode>;
+
+	fn video_modes(&self) -> impl Iterator<Item = VideoMode>;
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct VideoMode {

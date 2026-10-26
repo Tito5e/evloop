@@ -10,6 +10,7 @@ pub mod event_loop;
 pub mod ime;
 pub mod keyboard;
 pub mod monitor;
+pub mod pointer;
 pub mod resource;
 pub mod window;
 
