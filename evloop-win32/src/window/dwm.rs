@@ -6,28 +6,11 @@
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum BackdropType {
-	/// Corresponds to `DWMSBT_AUTO`.
-	///
-	/// Usually draws a default backdrop effect on the title bar.
 	#[default]
 	Auto = 0,
-
-	/// Corresponds to `DWMSBT_NONE`.
 	None = 1,
-
-	/// Corresponds to `DWMSBT_MAINWINDOW`.
-	///
-	/// Draws the Mica backdrop material.
 	MainWindow = 2,
-
-	/// Corresponds to `DWMSBT_TRANSIENTWINDOW`.
-	///
-	/// Draws the Background Acrylic backdrop material.
 	TransientWindow = 3,
-
-	/// Corresponds to `DWMSBT_TABBEDWINDOW`.
-	///
-	/// Draws the Alt Mica backdrop material.
 	TabbedWindow = 4,
 }
 
@@ -64,24 +47,9 @@ impl Default for Color {
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum CornerPreference {
-	/// Corresponds to `DWMWCP_DEFAULT`.
-	///
-	/// Let the system decide when to round window corners.
 	#[default]
 	Default = 0,
-
-	/// Corresponds to `DWMWCP_DONOTROUND`.
-	///
-	/// Never round window corners.
 	DoNotRound = 1,
-
-	/// Corresponds to `DWMWCP_ROUND`.
-	///
-	/// Round the corners, if appropriate.
 	Round = 2,
-
-	/// Corresponds to `DWMWCP_ROUNDSMALL`.
-	///
-	/// Round the corners if appropriate, with a small radius.
 	RoundSmall = 3,
 }

@@ -7,14 +7,6 @@ use crate::{
 	pointer::{ButtonSource, PointerKind, PointerSource},
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum StartCause {
-	ResumeTimeReached { start: Instant, requested_resume: Instant },
-	WaitCancelled { start: Instant, requested_resume: Option<Instant> },
-	Poll,
-	Init,
-}
-
 // TODO: move to each backend crate
 #[derive(Debug, Clone, PartialEq)]
 pub enum WindowEvent {

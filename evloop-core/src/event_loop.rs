@@ -28,11 +28,10 @@ impl ControlFlow {
 	}
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StartCause {
 	ResumeTimeReached { start: Instant, requested_resume: Instant },
 	WaitCancelled { start: Instant, requested_resume: Option<Instant> },
-
 	Poll,
 	Init,
 }

@@ -3,7 +3,9 @@
 
 #[macro_use]
 mod sys;
+mod application;
 mod data_transfer;
+mod event_loop;
 mod monitor;
 mod resource;
 mod window;
