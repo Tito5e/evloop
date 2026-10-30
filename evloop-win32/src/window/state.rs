@@ -5,6 +5,7 @@ use bitflags::bitflags;
 use evloop_core::{
 	dpi::Size,
 	ime::ImeCapabilities,
+	keyboard::ModifiersState,
 	window::{Theme, WindowPositioner},
 };
 use geometry_types::{PhysicalPosition, PhysicalSize};

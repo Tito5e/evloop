@@ -1,4 +1,3 @@
-pub(super) mod area;
 pub(super) mod attributes;
 pub(super) mod dwm;
 pub(super) mod flags;
@@ -41,6 +40,7 @@ use windows_sys::Win32::{
 };
 
 use crate::{
+	event_loop::ActiveEventLoop,
 	monitor::Fullscreen,
 	resource::icon::{Icon, IconType},
 	sys::message_id::DESTROY_MSG_ID,

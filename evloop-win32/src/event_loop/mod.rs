@@ -1,6 +1,11 @@
+mod active;
 mod attributes;
+mod cross_thread;
 mod runner;
 mod thread_proc;
+mod wait;
+
+pub use active::ActiveEventLoop;
 
 use std::{
 	ffi::c_void,
@@ -20,7 +25,12 @@ use windows_sys::Win32::{
 
 use crate::{
 	application::ApplicationHandler,
-	event_loop::{attributes::EventLoopAttributes, runner::EventLoopRunner},
+	event_loop::{
+		attributes::EventLoopAttributes,
+		runner::EventLoopRunner,
+		thread_proc::{create_event_target_window, insert_event_target_window_userdata},
+		wait::wait_for_messages_impl,
+	},
 	sys::dpi::become_dpi_aware,
 };
 
@@ -53,11 +63,7 @@ impl EventLoop {
 
 		let runner_shared = Rc::new(EventLoopRunner::new(thread_id, thread_msg_target));
 
-		insert_event_target_window_data(thread_msg_target, runner_shared.clone());
-		raw_input::register_all_mouse_and_keyboards_for_raw_input(
-			thread_msg_target,
-			Default::default(),
-		);
+		insert_event_target_window_userdata(thread_msg_target, runner_shared.clone());
 
 		Ok(Self {
 			runner: runner_shared,
@@ -78,13 +84,13 @@ impl EventLoop {
 
 		let exit_code = loop {
 			self.wait_for_messages(None);
-			if let Some(code) = self.exit_code() {
+			if let Some(code) = self.runner.exit_code() {
 				break code;
 			}
 
 			self.dispatch_peeked_messages();
 
-			if let Some(code) = self.exit_code() {
+			if let Some(code) = self.runner.exit_code() {
 				break code;
 			}
 		};
@@ -108,11 +114,11 @@ impl EventLoop {
 
 		self.runner.wakeup();
 
-		if self.exit_code().is_none() {
+		if self.runner.exit_code().is_none() {
 			self.wait_for_messages(timeout);
 		}
 
-		if self.exit_code().is_none() {
+		if self.runner.exit_code().is_none() {
 			self.dispatch_peeked_messages();
 		}
 
@@ -184,4 +190,20 @@ impl EventLoop {
 		drop(app);
 		result
 	}
+}
+
+fn main_thread_id() -> u32 {
+	static mut MAIN_THREAD_ID: u32 = 0;
+
+	#[unsafe(link_section = ".CRT$XCU")]
+	static INIT_MAIN_THREAD_ID: unsafe extern "C" fn() = {
+		unsafe extern "C" fn initer() {
+			unsafe {
+				MAIN_THREAD_ID = GetCurrentThreadId();
+			}
+		}
+		initer
+	};
+
+	unsafe { MAIN_THREAD_ID }
 }

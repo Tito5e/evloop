@@ -13,11 +13,15 @@ use windows_sys::Win32::{
 };
 
 use crate::{
-	event_loop::{runner::EventLoopRunner, thread_proc::user_data::ThreadTargetUserData},
+	event_loop::{
+		cross_thread::executor::ThreadExecFn, runner::EventLoopRunner,
+		thread_proc::user_data::ThreadTargetUserData,
+	},
 	sys::{
 		dynamic::get_instance_handle,
 		message_id::{EXEC_MSG_ID, USER_EVENT_MSG_ID},
 		wide::encode_wide,
+		window_long::{get_window_long, set_window_long},
 	},
 };
 
@@ -105,13 +109,7 @@ unsafe extern "system" fn thread_event_target_callback(
 			ValidateRect(window, ptr::null());
 			DefWindowProcW(window, msg, wparam, lparam)
 		},
-		WM_INPUT => {
-			if let Some(data) = get_raw_input_data(lparam as _) {
-				unsafe { handle_raw_input(&userdata, data) };
-			}
-
-			unsafe { DefWindowProcW(window, msg, wparam, lparam) }
-		}
+		WM_INPUT => unsafe { DefWindowProcW(window, msg, wparam, lparam) },
 		_ if msg == USER_EVENT_MSG_ID.get() => {
 			userdata.send_wakeup();
 			0

@@ -15,7 +15,7 @@ use windows_sys::Win32::{
 
 use crate::{
 	monitor::current_monitor,
-	window::{area::WindowArea, flags::WindowFlags, state::WindowState},
+	window::{flags::WindowFlags, state::WindowState},
 };
 
 pub(crate) fn outer_size_of(hwnd: HWND) -> PhysicalSize {

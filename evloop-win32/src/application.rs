@@ -1,6 +1,7 @@
 use evloop_core::{
-	event::{EvloopEvent, WindowEvent},
+	event::{DeviceId, EvloopEvent, WindowEvent},
 	event_loop::StartCause,
+	window::WindowId,
 };
 
 pub trait ApplicationHandler {
@@ -26,7 +27,12 @@ pub trait ApplicationHandler {
 		let _ = (event_loop, cause);
 	}
 
-	fn window_event(&mut self, event_loop: &ActiveEventLoop, event: WindowEvent);
+	fn window_event(
+		&mut self,
+		event_loop: &ActiveEventLoop,
+		window_id: WindowId,
+		event: WindowEvent,
+	);
 
 	fn evloop_event(&mut self, event_loop: &ActiveEventLoop, event: EvloopEvent) {
 		let _ = (event_loop, event);

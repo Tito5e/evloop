@@ -6,6 +6,7 @@ mod sys;
 mod application;
 mod data_transfer;
 mod event_loop;
+mod keyboard;
 mod monitor;
 mod resource;
 mod window;
