@@ -41,75 +41,6 @@ pub struct KeyEvent {
 	pub key_without_modifiers: keyboard::LogicalKey,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum NativeKeyCode {
-	Unidentified,
-	/// Android's "scancode"
-	Android(u32),
-	/// macOS's "scancode"
-	MacOS(u16),
-	/// Windows's "scancode"
-	Windows(u16),
-	/// XKB's "keycode"
-	Xkb(u32),
-	/// OpenHarmony's "scancode"
-	Ohos(u32),
-}
-
-impl fmt::Debug for NativeKeyCode {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		match self {
-			Self::Unidentified => f.debug_tuple("Unidentified").finish(),
-			Self::Android(code) => {
-				f.debug_tuple("Android").field(&format_args!("0x{code:04X}")).finish()
-			}
-			Self::MacOS(code) => {
-				f.debug_tuple("MacOS").field(&format_args!("0x{code:04X}")).finish()
-			}
-			Self::Windows(code) => {
-				f.debug_tuple("Windows").field(&format_args!("0x{code:04X}")).finish()
-			}
-			Self::Xkb(code) => f.debug_tuple("Xkb").field(&format_args!("0x{code:04X}")).finish(),
-			Self::Ohos(code) => {
-				f.debug_tuple("OpenHarmony").field(&format_args!("0x{code:04X}")).finish()
-			}
-		}
-	}
-}
-
-#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum NativeKey {
-	Unidentified,
-	Android(u32),
-	MacOS(u16),
-	Windows(u16),
-	Xkb(u32),
-	Web(SmolStr),
-	Ohos(u32),
-}
-
-impl fmt::Debug for NativeKey {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		match self {
-			Self::Unidentified => f.debug_tuple("Unidentified").finish(),
-			Self::Android(code) => {
-				f.debug_tuple("Android").field(&format_args!("0x{code:04X}")).finish()
-			}
-			Self::MacOS(code) => {
-				f.debug_tuple("MacOS").field(&format_args!("0x{code:04X}")).finish()
-			}
-			Self::Windows(code) => {
-				f.debug_tuple("Windows").field(&format_args!("0x{code:04X}")).finish()
-			}
-			Self::Xkb(code) => f.debug_tuple("Xkb").field(&format_args!("0x{code:04X}")).finish(),
-			Self::Web(code) => f.debug_tuple("Web").field(code).finish(),
-			Self::Ohos(code) => f.debug_tuple("OpenHarmony").field(code).finish(),
-		}
-	}
-}
-
-// TODO: impl NativeKeyCode => NativeKey mapper
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum PhysicalKey {
 	Code(KeyCode),
@@ -195,14 +126,6 @@ impl From<NamedKey> for LogicalKey {
 	}
 }
 
-// TODO: move to each backend crate
-/*impl From<NativeKey> for LogicalKey {
-	#[inline]
-	fn from(value: NativeKey) -> Self {
-		LogicalKey::Unidentified(value)
-	}
-}*/
-
 impl<Str> PartialEq<NamedKey> for LogicalKey<Str> {
 	#[inline]
 	fn eq(&self, other: &NamedKey) -> bool {
@@ -257,5 +180,67 @@ impl ModifiersState {
 	#[must_use]
 	pub fn alt_key(&self) -> bool {
 		self.intersects(Self::ALT)
+	}
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Modifiers {
+	pub(crate) state: ModifiersState,
+	pub(crate) pressed_mods: ModifiersKeys,
+}
+
+impl Modifiers {
+	pub fn new(state: ModifiersState, pressed_mods: ModifiersKeys) -> Self {
+		Self { state, pressed_mods }
+	}
+
+	pub fn state(&self) -> ModifiersState {
+		self.state
+	}
+
+	pub fn lshift_state(&self) -> ModifiersKeyState {
+		self.mod_state(ModifiersKeys::LSHIFT)
+	}
+
+	pub fn rshift_state(&self) -> ModifiersKeyState {
+		self.mod_state(ModifiersKeys::RSHIFT)
+	}
+
+	pub fn lalt_state(&self) -> ModifiersKeyState {
+		self.mod_state(ModifiersKeys::LALT)
+	}
+
+	pub fn ralt_state(&self) -> ModifiersKeyState {
+		self.mod_state(ModifiersKeys::RALT)
+	}
+
+	pub fn lcontrol_state(&self) -> ModifiersKeyState {
+		self.mod_state(ModifiersKeys::LCONTROL)
+	}
+
+	pub fn rcontrol_state(&self) -> ModifiersKeyState {
+		self.mod_state(ModifiersKeys::RCONTROL)
+	}
+
+	pub fn lmeta_state(&self) -> ModifiersKeyState {
+		self.mod_state(ModifiersKeys::LMETA)
+	}
+
+	pub fn rmeta_state(&self) -> ModifiersKeyState {
+		self.mod_state(ModifiersKeys::RMETA)
+	}
+
+	fn mod_state(&self, modifier: ModifiersKeys) -> ModifiersKeyState {
+		if self.pressed_mods.contains(modifier) {
+			ModifiersKeyState::Pressed
+		} else {
+			ModifiersKeyState::Unknown
+		}
+	}
+}
+
+impl From<ModifiersState> for Modifiers {
+	fn from(value: ModifiersState) -> Self {
+		Self { state: value, pressed_mods: Default::default() }
 	}
 }

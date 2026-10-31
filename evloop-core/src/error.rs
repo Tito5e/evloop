@@ -178,3 +178,43 @@ impl From<OsError> for TransferError {
 		Self::Os(value)
 	}
 }
+
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
+pub enum ImeSurroundingTextError {
+	TextTooLong,
+	CursorBadPosition,
+	AnchorBadPosition,
+}
+
+impl fmt::Display for ImeSurroundingTextError {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			ImeSurroundingTextError::TextTooLong => write!(f, "text exceeds maximum length"),
+			ImeSurroundingTextError::CursorBadPosition => {
+				write!(f, "cursor is not at a valid text index")
+			}
+			ImeSurroundingTextError::AnchorBadPosition => {
+				write!(f, "anchor is not at a valid text index")
+			}
+		}
+	}
+}
+
+impl Error for ImeSurroundingTextError {}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ImeRequestError {
+	NotEnabled,
+	AlreadyEnabled,
+	NotSupported,
+}
+
+impl fmt::Display for ImeRequestError {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			ImeRequestError::NotEnabled => write!(f, "ime is not enabled."),
+			ImeRequestError::AlreadyEnabled => write!(f, "ime is already enabled."),
+			ImeRequestError::NotSupported => write!(f, "ime is not supported."),
+		}
+	}
+}

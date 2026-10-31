@@ -1,5 +1,7 @@
 use std::{cell::LazyCell, cmp::Ordering, mem::transmute};
 
+use geometry_types::PhysicalPosition;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum PointerKind {
 	Mouse,
@@ -26,6 +28,16 @@ pub enum ButtonSource {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FingerId(usize);
+
+impl FingerId {
+	pub const fn into_raw(self) -> usize {
+		self.0
+	}
+
+	pub const fn from_raw(id: usize) -> Self {
+		Self(id)
+	}
+}
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
 pub enum TouchPhase {
@@ -251,6 +263,20 @@ pub enum TabletToolButton {
 	Contact,
 	Barrel,
 	Other(u16),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum MouseScrollDelta {
+	LineDelta(f32, f32),
+	PixelDelta(PhysicalPosition),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ScrollSource {
+	Unknown,
+	Wheel,
+	Finger,
+	Momentum,
 }
 
 #[cfg(test)]

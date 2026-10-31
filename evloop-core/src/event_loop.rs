@@ -1,17 +1,20 @@
 use std::time::{Duration, Instant};
 
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DeviceEventStrategy {
 	Always,
+	#[default]
 	WhenFocused,
 	Never,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PumpStatus {
 	Continue,
 	Exit(i32),
 }
 
-#[derive(Default, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ControlFlow {
 	Poll,
 	#[default]

@@ -1,6 +1,5 @@
 extern crate core;
 
-pub mod capability;
 pub mod cursor;
 pub mod data_transfer;
 pub mod dpi;
@@ -13,8 +12,3 @@ pub mod monitor;
 pub mod pointer;
 pub mod resource;
 pub mod window;
-
-pub enum Platform {
-	Win32,
-	Android,
-}

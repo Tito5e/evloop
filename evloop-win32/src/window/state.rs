@@ -24,7 +24,7 @@ use crate::{
 		window_query::{get_desktop_rect, is_focused},
 	},
 	window::{
-		area::WindowArea, attributes::WindowAttributes, flags::WindowFlags, r#type::WindowType,
+		area::get_inner_rect, attributes::WindowAttributes, flags::WindowFlags, r#type::WindowType,
 	},
 };
 
@@ -32,12 +32,12 @@ use crate::{
 pub(crate) struct WindowState {
 	pub mouse: MouseProperties,
 
-	pub min_size: Option<Size>,
-	pub max_size: Option<Size>,
+	pub min_surface_size: Option<Size>,
+	pub max_surface_size: Option<Size>,
 
 	pub surface_size: PhysicalSize,
 
-	pub surface_resize_increments: Option<Size>,
+	pub resize_increments: Option<Size>,
 
 	pub window_icon: Option<Icon>,
 	pub taskbar_icon: Option<Icon>,
@@ -88,12 +88,12 @@ impl WindowState {
 				last_position: None,
 			},
 
-			min_size: attributes.min_inner_size,
-			max_size: attributes.max_inner_size,
+			min_surface_size: attributes.min_surface_size,
+			max_surface_size: attributes.max_surface_size,
 
 			surface_size: PhysicalSize::new(0, 0),
 
-			surface_resize_increments: attributes.resize_increments,
+			resize_increments: attributes.resize_increments,
 
 			window_icon: attributes.window_icon.clone(),
 			taskbar_icon: None,
@@ -230,7 +230,7 @@ bitflags! {
 
 impl CursorFlags {
 	fn refresh_os_cursor(self, window: HWND) -> Result<(), io::Error> {
-		let client_rect = WindowArea::Inner.get_rect(window)?;
+		let client_rect = get_inner_rect(window)?;
 
 		if is_focused(window) {
 			let cursor_clip = match self.contains(CursorFlags::GRABBED) {

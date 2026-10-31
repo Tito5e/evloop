@@ -1,6 +1,8 @@
-pub(crate) mod action;
-pub(crate) mod data;
-pub(crate) mod hint;
+mod action;
+mod data;
+mod hint;
+
+pub use action::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct DataTransferId(i64);

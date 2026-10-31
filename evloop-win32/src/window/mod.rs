@@ -1,11 +1,13 @@
-pub(super) mod attributes;
-pub(super) mod dwm;
-pub(super) mod flags;
-pub(super) mod fullscreen;
-pub(super) mod placement;
-pub(super) mod state;
-pub(super) mod taskbar;
-pub(super) mod r#type;
+mod area;
+mod attributes;
+mod dwm;
+mod flags;
+mod fullscreen;
+mod init;
+mod placement;
+mod state;
+mod taskbar;
+mod r#type;
 
 use std::{
 	mem,
@@ -360,7 +362,7 @@ impl Window {
 		self.window_state_lock().use_system_wheel_speed = should_use;
 	}
 
-	fn set_icon(&self, new_icon: Icon, icon_type: IconType) {
+	fn set_window_icon(&self, new_icon: Icon, icon_type: IconType) {
 		unsafe {
 			SendMessageW(
 				self.hwnd(),

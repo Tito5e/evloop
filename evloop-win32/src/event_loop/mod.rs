@@ -5,7 +5,8 @@ mod runner;
 mod thread_proc;
 mod wait;
 
-pub use active::ActiveEventLoop;
+pub use active::*;
+pub(crate) use runner::EventLoopRunner;
 
 use std::{
 	ffi::c_void,

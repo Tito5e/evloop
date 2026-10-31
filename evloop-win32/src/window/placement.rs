@@ -15,12 +15,15 @@ use windows_sys::Win32::{
 
 use crate::{
 	monitor::current_monitor,
-	window::{flags::WindowFlags, state::WindowState},
+	window::{
+		area::{get_inner_rect, get_outer_rect},
+		flags::WindowFlags,
+		state::WindowState,
+	},
 };
 
 pub(crate) fn outer_size_of(hwnd: HWND) -> PhysicalSize {
-	WindowArea::Outer
-		.get_rect(hwnd)
+	get_outer_rect(hwnd)
 		.map(|rect| {
 			PhysicalSize::new((rect.right - rect.left) as u32, (rect.bottom - rect.top) as u32)
 		})
@@ -28,8 +31,7 @@ pub(crate) fn outer_size_of(hwnd: HWND) -> PhysicalSize {
 }
 
 fn surface_size_of(hwnd: HWND) -> PhysicalSize {
-	WindowArea::Inner
-		.get_rect(hwnd)
+	get_inner_rect(hwnd)
 		.map(|rect| {
 			PhysicalSize::new((rect.right - rect.left) as u32, (rect.bottom - rect.top) as u32)
 		})

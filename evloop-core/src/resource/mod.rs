@@ -1,3 +1,3 @@
-pub(crate) mod icon;
+mod icon;
 
 pub use icon::*;

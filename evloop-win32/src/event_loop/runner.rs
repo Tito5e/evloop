@@ -10,15 +10,14 @@ use std::{
 
 use evloop_core::{
 	data_transfer::DataTransferId,
-	event::{EvloopEvent, WindowEvent},
+	event::EvloopEvent,
 	event_loop::{ControlFlow, StartCause},
 	window::WindowId,
 };
-use geometry_types::PhysicalSize;
 use windows_sys::Win32::Foundation::HWND;
 
 use crate::{
-	application::ApplicationHandler, data_transfer::state::DataTransferState,
+	application::ApplicationHandler, data_transfer::state::DataTransferState, event::WindowEvent,
 	event_loop::active::ActiveEventLoop,
 };
 
