@@ -1,11 +1,17 @@
 use std::{
 	cell::Cell,
+	io, mem, panic, ptr,
 	rc::Rc,
 	sync::{Arc, Mutex},
 };
 
-use evloop_core::dpi::Size;
+use evloop_core::{
+	dpi::Size,
+	error::{CreateWindowError, InvalidInput},
+	window::WindowLevel,
+};
 use geometry_types::PhysicalSize;
+use raw_window_handle::RawWindowHandle;
 use windows_sys::Win32::{
 	Foundation::HWND,
 	Graphics::{
@@ -13,8 +19,17 @@ use windows_sys::Win32::{
 		Gdi::{CreateRectRgn, DeleteObject},
 	},
 	UI::{
-		Input::Touch::{RegisterTouchWindow, TWF_WANTPALM},
-		WindowsAndMessaging::{GetSystemMetrics, NID_READY, SM_DIGITIZER},
+		Input::{
+			KeyboardAndMouse::{
+				INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP,
+				MAPVK_VK_TO_VSC, MapVirtualKeyW, SendInput, VK_LMENU, VK_MENU,
+			},
+			Touch::{RegisterTouchWindow, TWF_WANTPALM},
+		},
+		WindowsAndMessaging::{
+			CS_HREDRAW, CS_VREDRAW, CW_USEDEFAULT, CreateWindowExW, GetSystemMetrics, NID_READY,
+			RegisterClassExW, SM_DIGITIZER, SetForegroundWindow, WNDCLASSEXW,
+		},
 	},
 };
 
@@ -24,10 +39,12 @@ use crate::{
 	sys::{
 		self,
 		dpi::{dpi_to_scale_factor, enable_non_client_dpi_scaling},
+		dynamic::get_instance_handle,
+		wide::encode_wide,
 	},
 	window::{
-		SyncWindowHandle, Window, attributes::WindowAttributes, flags::WindowFlags,
-		state::WindowState,
+		SyncWindowHandle, Window, attributes::WindowAttributes, dark_mode::try_theme,
+		flags::WindowFlags, state::WindowState, r#type::WindowType,
 	},
 };
 
@@ -71,7 +88,7 @@ impl InitData<'_> {
 		unsafe { ImeContext::set_ime_allowed(window, false) };
 
 		Window {
-			window: SyncWindowHandle(window),
+			window: SyncWindowHandle::new(window),
 			window_state,
 			thread_executor: self.runner.create_thread_executor(),
 		}
@@ -174,4 +191,164 @@ impl InitData<'_> {
 			win.set_corner_preference(corner);
 		}
 	}
+}
+
+pub(crate) unsafe fn init(
+	attributes: WindowAttributes,
+	runner: &Rc<EventLoopRunner>,
+) -> Result<Window, CreateWindowError> {
+	let title = encode_wide(&attributes.title);
+
+	let class_name = encode_wide(&attributes.class_name);
+	unsafe { register_window_class(&class_name) };
+
+	let is_popup = match attributes.window_type {
+		WindowType::Window => false,
+		WindowType::Popup => true,
+		_ => panic!("Unknown WindowType"),
+	};
+
+	let anchored = is_popup || attributes.positioner.is_some();
+	let mut window_flags = WindowFlags::empty();
+
+	window_flags.set(WindowFlags::MARKER_DECORATIONS, attributes.decorations);
+	window_flags.set(WindowFlags::POPUP, is_popup);
+	window_flags.set(WindowFlags::ANCHORED, anchored);
+	window_flags.set(WindowFlags::MARKER_UNDECORATED_SHADOW, attributes.decoration_shadow);
+	window_flags
+		.set(WindowFlags::ALWAYS_ON_TOP, attributes.window_level == WindowLevel::AlwaysOnTop);
+	window_flags
+		.set(WindowFlags::ALWAYS_ON_BOTTOM, attributes.window_level == WindowLevel::AlwaysOnBottom);
+	window_flags.set(WindowFlags::NO_BACK_BUFFER, attributes.no_redirection_bitmap);
+	window_flags.set(WindowFlags::MARKER_ACTIVATE, attributes.active);
+	window_flags.set(WindowFlags::TRANSPARENT, attributes.transparent);
+	window_flags.set(WindowFlags::RESIZABLE, attributes.resizable && !is_popup);
+	window_flags.set(WindowFlags::CLOSABLE, true);
+	window_flags.set(WindowFlags::CLIP_CHILDREN, attributes.clip_children);
+
+	let mut fallback_parent = || match attributes.owner {
+		Some(parent) => {
+			window_flags.set(WindowFlags::POPUP, true);
+			Some(parent)
+		}
+		None => {
+			window_flags.set(WindowFlags::ON_TASKBAR, true);
+			None
+		}
+	};
+
+	let parent = match attributes.parent_window {
+		Some(RawWindowHandle::Win32(handle)) => {
+			if !is_popup {
+				window_flags.set(WindowFlags::CHILD, true);
+			}
+			if attributes.menu.is_some() {
+				tracing::warn!("Setting a menu on a child window is unsupported");
+			}
+			Some(handle.hwnd.get() as HWND)
+		}
+		Some(raw) => unreachable!("Invalid raw window handle {raw:?} on Windows"),
+		None => {
+			if is_popup {
+				return Err(InvalidInput::new("Popup without a parent is not supported").into());
+			}
+			fallback_parent()
+		}
+	};
+
+	let menu = attributes.menu;
+	let fullscreen = attributes.fullscreen.clone();
+	let maximized = attributes.maximized;
+	let mut initdata = InitData { runner, attributes, window_flags, window: None };
+
+	let (style, ex_style) = window_flags.to_window_styles();
+	let handle = unsafe {
+		CreateWindowExW(
+			ex_style,
+			class_name.as_ptr(),
+			title.as_ptr(),
+			style,
+			CW_USEDEFAULT,
+			CW_USEDEFAULT,
+			CW_USEDEFAULT,
+			CW_USEDEFAULT,
+			parent.unwrap_or(ptr::null_mut()),
+			menu.unwrap_or(ptr::null_mut()),
+			get_instance_handle(),
+			&mut initdata as *mut _ as *mut _,
+		)
+	};
+
+	if let Err(panic_error) = runner.take_panic_error() {
+		panic::resume_unwind(panic_error)
+	}
+
+	if handle.is_null() {
+		return Err(os_error!(io::Error::last_os_error()).into());
+	}
+
+	let window = initdata.window.unwrap();
+
+	if fullscreen.is_some() {
+		window.set_fullscreen(fullscreen);
+		unsafe { force_window_active(window.window.hwnd()) };
+	} else if maximized {
+		window.set_maximized(true);
+	}
+
+	Ok(window)
+}
+
+unsafe fn register_window_class(class_name: &[u16]) {
+	let class = WNDCLASSEXW {
+		cbSize: mem::size_of::<WNDCLASSEXW>() as u32,
+		style: CS_HREDRAW | CS_VREDRAW,
+		lpfnWndProc: Some(public_window_callback),
+		cbClsExtra: 0,
+		cbWndExtra: 0,
+		hInstance: get_instance_handle(),
+		hIcon: ptr::null_mut(),
+		hCursor: ptr::null_mut(),
+		hbrBackground: ptr::null_mut(),
+		lpszMenuName: ptr::null(),
+		lpszClassName: class_name.as_ptr(),
+		hIconSm: ptr::null_mut(),
+	};
+
+	unsafe { RegisterClassExW(&class) };
+}
+
+pub unsafe fn force_window_active(handle: HWND) {
+	let alt_sc = unsafe { MapVirtualKeyW(VK_MENU as u32, MAPVK_VK_TO_VSC) };
+
+	let inputs = [
+		INPUT {
+			r#type: INPUT_KEYBOARD,
+			Anonymous: INPUT_0 {
+				ki: KEYBDINPUT {
+					wVk: VK_LMENU,
+					wScan: alt_sc as u16,
+					dwFlags: KEYEVENTF_EXTENDEDKEY,
+					dwExtraInfo: 0,
+					time: 0,
+				},
+			},
+		},
+		INPUT {
+			r#type: INPUT_KEYBOARD,
+			Anonymous: INPUT_0 {
+				ki: KEYBDINPUT {
+					wVk: VK_LMENU,
+					wScan: alt_sc as u16,
+					dwFlags: KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP,
+					time: 0,
+					dwExtraInfo: 0,
+				},
+			},
+		},
+	];
+
+	unsafe { SendInput(inputs.len() as u32, inputs.as_ptr(), mem::size_of::<INPUT>() as i32) };
+
+	unsafe { SetForegroundWindow(handle) };
 }

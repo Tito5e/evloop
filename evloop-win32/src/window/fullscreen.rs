@@ -23,6 +23,15 @@ use crate::{
 };
 
 impl Window {
+	pub fn set_fullscreen(&self, fullscreen: Option<Fullscreen>) {
+		self.apply_fullscreen(fullscreen);
+	}
+
+	pub fn fullscreen(&self) -> Option<Fullscreen> {
+		let window_state = self.window_state_lock();
+		window_state.fullscreen.clone()
+	}
+
 	pub(crate) fn apply_fullscreen(&self, fullscreen: Option<Fullscreen>) {
 		let window = self.window;
 		let window_state = Arc::clone(&self.window_state);

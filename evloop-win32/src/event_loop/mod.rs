@@ -4,9 +4,11 @@ mod cross_thread;
 mod runner;
 mod thread_proc;
 mod wait;
+mod window_proc;
 
 pub use active::*;
-pub(crate) use runner::EventLoopRunner;
+pub use cross_thread::*;
+pub use runner::*;
 
 use std::{
 	ffi::c_void,
@@ -28,7 +30,6 @@ use crate::{
 	application::ApplicationHandler,
 	event_loop::{
 		attributes::EventLoopAttributes,
-		runner::EventLoopRunner,
 		thread_proc::{create_event_target_window, insert_event_target_window_userdata},
 		wait::wait_for_messages_impl,
 	},

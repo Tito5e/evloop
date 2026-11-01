@@ -12,4 +12,4 @@ mod keyboard;
 mod monitor;
 mod resource;
 mod temporary_mod;
-mod window;
+pub mod window;

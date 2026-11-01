@@ -1,4 +1,4 @@
-use std::{ptr, sync::Mutex};
+use std::{io, mem, ptr, sync::Mutex};
 
 use evloop_core::{
 	dpi::{Position, Size},
@@ -6,21 +6,41 @@ use evloop_core::{
 };
 use geometry_types::{LogicalPosition, LogicalSize, PhysicalPosition, PhysicalSize};
 use windows_sys::Win32::{
-	Foundation::{HWND, POINT},
+	Foundation::{HWND, POINT, RECT},
 	Graphics::Gdi::{ClientToScreen, InvalidateRgn},
 	UI::WindowsAndMessaging::{
-		GetParent, SWP_ASYNCWINDOWPOS, SWP_NOACTIVATE, SWP_NOSIZE, SWP_NOZORDER, SetWindowPos,
+		GetClientRect, GetParent, GetWindowRect, SWP_ASYNCWINDOWPOS, SWP_NOACTIVATE, SWP_NOSIZE,
+		SWP_NOZORDER, SetWindowPos,
 	},
 };
 
 use crate::{
 	monitor::current_monitor,
-	window::{
-		area::{get_inner_rect, get_outer_rect},
-		flags::WindowFlags,
-		state::WindowState,
-	},
+	sys::error::win_to_err,
+	window::{flags::WindowFlags, state::WindowState},
 };
+
+pub(crate) fn get_outer_rect(hwnd: HWND) -> Result<RECT, io::Error> {
+	let mut rect = unsafe { mem::zeroed() };
+	win_to_err(unsafe { GetWindowRect(hwnd, &mut rect) })?;
+
+	Ok(rect)
+}
+
+pub(crate) fn get_inner_rect(hwnd: HWND) -> Result<RECT, io::Error> {
+	unsafe {
+		let mut rect = mem::zeroed();
+		let mut top_left = mem::zeroed();
+		win_to_err(ClientToScreen(hwnd, &mut top_left))?;
+		win_to_err(GetClientRect(hwnd, &mut rect))?;
+		rect.left += top_left.x;
+		rect.top += top_left.y;
+		rect.right += top_left.x;
+		rect.bottom += top_left.y;
+
+		Ok(rect)
+	}
+}
 
 pub(crate) fn outer_size_of(hwnd: HWND) -> PhysicalSize {
 	get_outer_rect(hwnd)

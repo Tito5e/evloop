@@ -24,7 +24,8 @@ use crate::{
 		window_query::{get_desktop_rect, is_focused},
 	},
 	window::{
-		area::get_inner_rect, attributes::WindowAttributes, flags::WindowFlags, r#type::WindowType,
+		attributes::WindowAttributes, flags::WindowFlags, placement::get_inner_rect,
+		r#type::WindowType,
 	},
 };
 

@@ -1,2 +1,5 @@
-pub(crate) mod executor;
-pub(crate) mod proxy;
+mod executor;
+mod proxy;
+
+pub use executor::*;
+pub use proxy::*;

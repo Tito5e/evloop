@@ -14,7 +14,7 @@ use windows_sys::Win32::{
 
 use crate::{
 	event_loop::{
-		cross_thread::executor::ThreadExecFn, runner::EventLoopRunner,
+		cross_thread::ThreadExecFn, runner::EventLoopRunner,
 		thread_proc::user_data::ThreadTargetUserData,
 	},
 	sys::{

@@ -57,11 +57,12 @@ pub enum WindowEvent {
 		primary: bool,
 		button: ButtonSource,
 	},
-	ScaleFactorChanged {
+	/*ScaleFactorChanged {
 		scale_factor: f64,
 		/// Lets the application pick the surface size the window gets after the change.
 		surface_size_writer: SurfaceSizeWriter,
-	},
+	},*/
+	ScaleFactorChanged(f64),
 	ThemeChanged(Theme),
 	RedrawRequested,
 	DragEntered {
