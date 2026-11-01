@@ -17,12 +17,12 @@ pub struct Window {
 }
 
 impl Window {
-	pub(crate) fn new(event_loop: &ActiveEventLoop) -> Result<Self, CreateWindowError> {
-		Ok(Self {
+	pub(crate) fn new(event_loop: &ActiveEventLoop) -> Self {
+		Self {
 			app: event_loop.app.clone(),
 			ime_capabilities: Default::default(),
 			redraw_requester: event_loop.redraw_requester.clone(),
-		})
+		}
 	}
 
 	pub(crate) fn config(&self) -> ConfigurationRef {

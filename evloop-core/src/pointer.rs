@@ -21,7 +21,7 @@ pub enum PointerSource {
 #[derive(Clone, Debug, PartialEq)]
 pub enum ButtonSource {
 	Mouse(MouseButton),
-	Touch { fniger_id: FingerId, force: Option<Force> },
+	Touch { finger_id: FingerId, force: Option<Force> },
 	TabletTool { kind: TabletToolKind, button: TabletToolButton, data: TabletToolData },
 	Unknown(u16),
 }

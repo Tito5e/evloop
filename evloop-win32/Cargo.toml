@@ -5,7 +5,7 @@ repository.workspace = true
 license.workspace = true
 edition.workspace = true
 
-[dependencies]
+[target.'cfg(target_os = "windows")'.dependencies]
 evloop-core.workspace = true
 
 geometry-types.workspace = true

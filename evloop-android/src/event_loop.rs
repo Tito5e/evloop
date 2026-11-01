@@ -1,6 +1,5 @@
 use crate::application::ApplicationHandler;
-use crate::capability::CanGetWindow;
-use crate::lifecycle::{Paused, Resumed, Running, Started, Stopped, SurfaceAvailable, SurfaceLost};
+use crate::event::{KeyEvent, WindowEvent};
 use crate::window::Window;
 use crate::{
 	HAS_FOCUS, RedrawRequester, SharedFlag, content_rect, keycodes, min_timeout, platform,
@@ -9,16 +8,10 @@ use crate::{
 use android_activity::input::{InputEvent, KeyAction, Keycode, MotionAction};
 use android_activity::ndk::configuration::UiModeNight;
 use android_activity::{AndroidApp, AndroidAppWaker, InputStatus, MainEvent, PollEvent};
-use evloop_core::Platform;
-use evloop_core::capability::{
-	CanExit, ControlFlowAvailable, PlatformAvailable, SystemThemeAvailable,
-};
-use evloop_core::error::{CreateWindowError, EventLoopError};
-use evloop_core::event::{
-	ButtonSource, DeviceId, ElementState, EvloopEvent, FingerId, Force, KeyEvent, PointerKind,
-	PointerSource, WindowEvent,
-};
+use evloop_core::error::EventLoopError;
+use evloop_core::event::{DeviceId, ElementState, EvloopEvent};
 use evloop_core::event_loop::{ControlFlow, PumpStatus, StartCause};
+use evloop_core::pointer::{ButtonSource, FingerId, Force, PointerKind, PointerSource};
 use evloop_core::window::Theme;
 use geometry_types::{PhysicalPosition, PhysicalSize};
 use std::cell::Cell;
@@ -97,7 +90,7 @@ impl EventLoop {
 
 			match event {
 				MainEvent::InitWindow { .. } => {
-					app.surface_available(&self.active_loop);
+					app.surface_available(&self.active_loop, Window::new(&self.active_loop));
 				}
 				MainEvent::TerminateWindow { .. } => {
 					app.surface_lost(&self.active_loop);
@@ -189,7 +182,7 @@ impl EventLoop {
 				} else {
 					PhysicalSize::new(0, 0)
 				};
-				let event = WindowEvent::SurfaceResized(size);
+				let event = WindowEvent::Resized(size);
 				app.window_event(&self.active_loop, event);
 			}
 
@@ -273,7 +266,6 @@ impl EventLoop {
 									}
 									_ => ButtonSource::Unknown(0),
 								},
-								is_macos_activation_click: false,
 							};
 							app.window_event(&self.active_loop, event);
 						}
@@ -313,7 +305,6 @@ impl EventLoop {
 										}
 										_ => ButtonSource::Unknown(0),
 									},
-									is_macos_activation_click: false,
 								};
 								app.window_event(&self.active_loop, event);
 							}
@@ -365,6 +356,7 @@ impl EventLoop {
 						device_id: Some(DeviceId::from_raw(key.device_id() as i64)),
 						event: KeyEvent {
 							state,
+							raw_key: keycode,
 							physical_key: keycodes::to_physical_key(keycode),
 							logical_key,
 							location: keycodes::to_location(keycode),
@@ -549,36 +541,24 @@ impl ActiveEventLoop {
 	fn clear_exit(&self) {
 		self.exit.set(false);
 	}
-}
 
-impl CanGetWindow for ActiveEventLoop {
-	fn get_window(&self) -> Result<Window, CreateWindowError> {
-		Window::new(self)
-	}
-}
-
-impl CanExit for ActiveEventLoop {
-	fn exit(&self) {
+	pub fn exit(&self) {
 		self.exit.set(true);
 	}
 
-	fn exiting(&self) -> bool {
+	pub fn exiting(&self) -> bool {
 		self.exit.get()
 	}
-}
 
-impl ControlFlowAvailable for ActiveEventLoop {
-	fn set_control_flow(&self, control_flow: ControlFlow) {
+	pub fn set_control_flow(&self, control_flow: ControlFlow) {
 		self.control_flow.set(control_flow);
 	}
 
-	fn control_flow(&self) -> ControlFlow {
+	pub fn control_flow(&self) -> ControlFlow {
 		self.control_flow.get()
 	}
-}
 
-impl SystemThemeAvailable for ActiveEventLoop {
-	fn system_theme(&self) -> Option<Theme> {
+	pub fn system_theme(&self) -> Option<Theme> {
 		match self.app.config().ui_mode_night() {
 			UiModeNight::No => Some(Theme::Light),
 			UiModeNight::Yes => Some(Theme::Dark),
@@ -586,26 +566,6 @@ impl SystemThemeAvailable for ActiveEventLoop {
 		}
 	}
 }
-
-impl PlatformAvailable for ActiveEventLoop {
-	fn platform(&self) -> Platform {
-		Platform::Android
-	}
-}
-
-impl Started for ActiveEventLoop {}
-
-impl Stopped for ActiveEventLoop {}
-
-impl SurfaceAvailable for ActiveEventLoop {}
-
-impl SurfaceLost for ActiveEventLoop {}
-
-impl Resumed for ActiveEventLoop {}
-
-impl Paused for ActiveEventLoop {}
-
-impl Running for ActiveEventLoop {}
 
 pub struct EventLoopProxy {
 	wake_up: AtomicBool,

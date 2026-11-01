@@ -1,10 +1,9 @@
 #![cfg(target_os = "android")] // FIXME(Tito5e): Hack for allow compiling on all platforms.
 
 pub mod application;
-pub mod capability;
+pub mod event;
 pub mod event_loop;
 pub mod keycodes;
-pub mod lifecycle;
 pub mod platform;
 pub mod window;
 
