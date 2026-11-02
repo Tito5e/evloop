@@ -5,6 +5,7 @@ use std::{
 	collections::VecDeque,
 	mem, panic,
 	rc::Rc,
+	sync::{Arc, Mutex},
 	time::Instant,
 };
 
@@ -14,11 +15,20 @@ use evloop_core::{
 	event_loop::{ControlFlow, StartCause},
 	window::WindowId,
 };
-use windows_sys::Win32::Foundation::HWND;
+use geometry_types::PhysicalSize;
+use windows_sys::Win32::{
+	Foundation::HWND,
+	UI::{
+		Input::KeyboardAndMouse::GetFocus,
+		WindowsAndMessaging::{GWL_USERDATA, GetForegroundWindow},
+	},
+};
 
 use crate::{
-	application::ApplicationHandler, data_transfer::state::DataTransferState, event::WindowEvent,
-	event_loop::active::ActiveEventLoop,
+	application::ApplicationHandler,
+	event::{SurfaceSizeWriter, WindowEvent},
+	event_loop::{EventLoopThreadExecutor, WindowUserData, active::ActiveEventLoop},
+	sys::window_long::get_window_long,
 };
 
 type EventHandler = Cell<Option<&'static mut (dyn ApplicationHandler + 'static)>>;
@@ -37,13 +47,13 @@ pub(crate) struct EventLoopRunner {
 	event_handler: Rc<EventHandler>,
 	event_buffer: RefCell<VecDeque<Event>>,
 
-	data_transfer: DataTransferState,
+	//data_transfer: DataTransferState,
 	windows: RefCell<Vec<WindowId>>,
 
-	pub(crate) source_drag: Cell<Option<SourceDrag>>,
-	pub(super) pending_drag: RefCell<Option<PendingDrag>>,
+	//pub(crate) source_drag: Cell<Option<SourceDrag>>,
+	//pub(super) pending_drag: RefCell<Option<PendingDrag>>,
 
-	pending_source_drag_cleanup: Cell<Option<DataTransferId>>,
+	//pending_source_drag_cleanup: Cell<Option<DataTransferId>>,
 	panic_error: Cell<Option<PanicError>>,
 }
 
@@ -60,16 +70,56 @@ impl EventLoopRunner {
 			last_events_cleared: Cell::new(Instant::now()),
 			event_handler: Rc::new(Cell::new(None)),
 			event_buffer: RefCell::new(VecDeque::new()),
-			data_transfer: DataTransferState::default(),
+			//data_transfer: DataTransferState::default(),
 			windows: RefCell::new(Vec::new()),
-			source_drag: Cell::new(None),
-			pending_drag: RefCell::new(None),
-			pending_source_drag_cleanup: Cell::new(None),
+			//source_drag: Cell::new(None),
+			//pending_drag: RefCell::new(None),
+			//pending_source_drag_cleanup: Cell::new(None),
 		}
 	}
 
-	pub(crate) fn data_transfer(&self) -> &DataTransferState {
+	/*pub(crate) fn try_execute_drag_drop(self: &Rc<Self>) {
+		let Some(drag) = self.pending_drag.take() else {
+			return;
+		};
+		let (window_id, id) = (drag.window_id, drag.id);
+
+		drag.run(&self.source_drag, |outcome| match outcome {
+			DragOutcome::Dropped { action } => self.send_event(Event::Window {
+				window_id,
+				event: WindowEvent::OutgoingDragDropped { id, action },
+			}),
+			DragOutcome::Cancelled => self.send_event(Event::Window {
+				window_id,
+				event: WindowEvent::OutgoingDragCanceled { id },
+			}),
+		});
+	}*/
+
+	/*pub(crate) fn defer_source_drag_cleanup(&self, id: DataTransferId) {
+		self.pending_source_drag_cleanup.set(Some(id));
+	}*/
+
+	/*pub(crate) fn data_transfer(&self) -> &DataTransferState {
 		&self.data_transfer
+	}*/
+
+	pub(crate) fn register_window(&self, id: WindowId) {
+		self.windows.borrow_mut().push(id);
+	}
+
+	pub(crate) fn unregister_window(&self, id: WindowId) {
+		self.windows.borrow_mut().retain(|window| *window != id);
+	}
+
+	pub(crate) fn clipboard_window(&self) -> Option<WindowId> {
+		let windows = self.windows.borrow();
+
+		[unsafe { GetFocus() }, unsafe { GetForegroundWindow() }]
+			.into_iter()
+			.map(|hwnd| WindowId::from_raw(hwnd as usize))
+			.find(|id| windows.contains(id))
+			.or_else(|| windows.first().copied())
 	}
 
 	pub(crate) unsafe fn set_app<'app>(
@@ -104,10 +154,10 @@ impl EventLoopRunner {
 		self.panic_error.set(None);
 		self.exit.set(None);
 		self.event_handler.set(None);
-		self.data_transfer.reset();
-		self.source_drag.set(None);
-		self.pending_drag.take();
-		self.pending_source_drag_cleanup.set(None);
+		//self.data_transfer.reset();
+		//self.source_drag.set(None);
+		//self.pending_drag.take();
+		//self.pending_source_drag_cleanup.set(None);
 	}
 
 	pub fn thread_msg_target(&self) -> HWND {
@@ -164,6 +214,10 @@ impl EventLoopRunner {
 		}
 	}
 
+	pub(crate) fn create_thread_executor(&self) -> EventLoopThreadExecutor {
+		EventLoopThreadExecutor { thread_id: self.thread_id, target_window: self.thread_msg_target }
+	}
+
 	pub(crate) fn prepare_wait(self: &Rc<Self>) {
 		self.move_state_to(RunnerState::Idle);
 	}
@@ -213,9 +267,9 @@ impl EventLoopRunner {
 			}
 		}
 
-		if let Some(id) = self.pending_source_drag_cleanup.take() {
+		/*if let Some(id) = self.pending_source_drag_cleanup.take() {
 			self.data_transfer.remove_drag(id);
-		}
+		}*/
 	}
 
 	fn move_state_to(self: &Rc<Self>, new_runner_state: RunnerState) {
@@ -283,10 +337,6 @@ impl EventLoopRunner {
 			}
 		};
 		self.call_event_handler(|app, event_loop| app.enter_events(event_loop, start_cause));
-
-		if init {
-			self.call_event_handler(|app, event_loop| app.surface_available(event_loop));
-		}
 		self.dispatch_buffered_events();
 	}
 }
@@ -310,7 +360,7 @@ pub(crate) enum RunnerState {
 #[derive(Debug, Clone)]
 pub(crate) enum Event {
 	Window { window_id: WindowId, event: WindowEvent },
-	BufferedScaleFactorChanged(HWND, f64 /* , PhysicalSize */),
+	BufferedScaleFactorChanged(HWND, f64, PhysicalSize),
 	// FIXME(Tito5e): [UPSTREAM] Coalesce these into a flag (or similar) instead of handling them as events.
 	// https://github.com/rust-windowing/winit/pull/3687
 	WakeUp,
@@ -319,12 +369,14 @@ pub(crate) enum Event {
 impl Event {
 	pub fn buffer_scale_factor(self) -> Self {
 		match self {
-			Self::Window { window_id, event: WindowEvent::ScaleFactorChanged(scale_factor) } => {
-				Event::BufferedScaleFactorChanged(
-					window_id.into_raw() as HWND,
-					scale_factor, /* TODO: Size Handling */
-				)
-			}
+			Self::Window {
+				event: WindowEvent::ScaleFactorChanged { scale_factor, surface_size_writer },
+				window_id,
+			} => Event::BufferedScaleFactorChanged(
+				window_id.into_raw() as HWND,
+				scale_factor,
+				surface_size_writer.surface_size().unwrap(),
+			),
 			event => event,
 		}
 	}
@@ -332,15 +384,31 @@ impl Event {
 	pub fn dispatch_event(self, app: &mut dyn ApplicationHandler, event_loop: &ActiveEventLoop) {
 		match self {
 			Self::Window { window_id, event } => app.window_event(event_loop, window_id, event),
-			Self::BufferedScaleFactorChanged(window, scale_factor) => {
-				//let user_new_surface_size = Arc::new(Mutex::new(new_surface_size));
+			Self::BufferedScaleFactorChanged(window, scale_factor, new_surface_size) => {
+				let user_new_surface_size = Arc::new(Mutex::new(new_surface_size));
 				app.window_event(
 					event_loop,
 					WindowId::from_raw(window as usize),
-					WindowEvent::ScaleFactorChanged(scale_factor),
+					WindowEvent::ScaleFactorChanged {
+						scale_factor,
+						surface_size_writer: SurfaceSizeWriter::new(Arc::downgrade(
+							&user_new_surface_size,
+						)),
+					},
 				);
 
-				// TODO: Size Handling
+				let surface_size = *user_new_surface_size.lock().unwrap();
+
+				drop(user_new_surface_size);
+
+				if surface_size != new_surface_size {
+					let window_flags = unsafe {
+						let userdata = get_window_long(window, GWL_USERDATA) as *mut WindowUserData;
+						(*userdata).window_state_lock().window_flags
+					};
+
+					window_flags.set_size(window, surface_size);
+				}
 			}
 			Self::WakeUp => app.evloop_event(event_loop, EvloopEvent::ProxyWakeUp),
 		}

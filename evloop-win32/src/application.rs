@@ -9,10 +9,6 @@ pub trait ApplicationHandler {
 		let _ = event_loop;
 	}
 
-	fn surface_available(&mut self, event_loop: &ActiveEventLoop);
-
-	fn surface_lost(&mut self, event_loop: &ActiveEventLoop);
-
 	fn resumed(&mut self, event_loop: &ActiveEventLoop) {
 		let _ = event_loop;
 	}
@@ -38,5 +34,52 @@ pub trait ApplicationHandler {
 
 	fn exit_events(&mut self, event_loop: &ActiveEventLoop) {
 		let _ = event_loop;
+	}
+}
+
+impl<A: ?Sized + ApplicationHandler> ApplicationHandler for &mut A {
+	#[inline]
+	fn started(&mut self, event_loop: &ActiveEventLoop, cause: StartCause) {
+		(**self).started(event_loop, cause);
+	}
+
+	#[inline]
+	fn stopped(&mut self, event_loop: &ActiveEventLoop) {
+		(**self).stopped(event_loop);
+	}
+
+	#[inline]
+	fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+		(**self).resumed(event_loop);
+	}
+
+	#[inline]
+	fn paused(&mut self, event_loop: &ActiveEventLoop) {
+		(**self).paused(event_loop);
+	}
+
+	#[inline]
+	fn enter_events(&mut self, event_loop: &ActiveEventLoop, cause: StartCause) {
+		(**self).enter_events(event_loop, cause);
+	}
+
+	#[inline]
+	fn window_event(
+		&mut self,
+		event_loop: &ActiveEventLoop,
+		window_id: WindowId,
+		event: WindowEvent,
+	) {
+		(**self).window_event(event_loop, window_id, event);
+	}
+
+	#[inline]
+	fn evloop_event(&mut self, event_loop: &ActiveEventLoop, event: EvloopEvent) {
+		(**self).evloop_event(event_loop, event);
+	}
+
+	#[inline]
+	fn exit_events(&mut self, event_loop: &ActiveEventLoop) {
+		(**self).exit_events(event_loop);
 	}
 }

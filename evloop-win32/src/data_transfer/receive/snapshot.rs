@@ -1,9 +1,6 @@
 use std::{collections::HashMap, ffi::c_void, ptr};
 
-use evloop_core::{
-	data_transfer::{SendData, TypeHint},
-	error::TransferError,
-};
+use evloop_core::error::TransferError;
 use windows_sys::{
 	Win32::{Foundation::S_OK, System::Ole::OleGetClipboard},
 	core::HRESULT,

@@ -4,11 +4,11 @@
 #[macro_use]
 mod sys;
 mod application;
-mod data_transfer;
+//mod data_transfer;
 mod event;
 pub mod event_loop;
-mod ime;
-mod keyboard;
+mod input;
+pub mod keyboard;
 mod monitor;
 mod resource;
 mod temporary_mod;

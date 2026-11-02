@@ -4,13 +4,15 @@ use evloop_core::{
 	data_transfer::{DataTransferId, DndAction},
 	event::{DeviceId, ElementState},
 	ime::Ime,
-	keyboard::{KeyEvent, Modifiers, PhysicalKey},
+	keyboard::{Modifiers, PhysicalKey},
 	pointer::{
 		ButtonSource, MouseScrollDelta, PointerKind, PointerSource, ScrollSource, TouchPhase,
 	},
 	window::Theme,
 };
 use geometry_types::{PhysicalPosition, PhysicalSize};
+
+use crate::keyboard::KeyEvent;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum WindowEvent {
@@ -57,12 +59,11 @@ pub enum WindowEvent {
 		primary: bool,
 		button: ButtonSource,
 	},
-	/*ScaleFactorChanged {
+	ScaleFactorChanged {
 		scale_factor: f64,
 		/// Lets the application pick the surface size the window gets after the change.
 		surface_size_writer: SurfaceSizeWriter,
-	},*/
-	ScaleFactorChanged(f64),
+	},
 	ThemeChanged(Theme),
 	RedrawRequested,
 	DragEntered {

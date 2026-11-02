@@ -14,8 +14,12 @@ mod status;
 mod taskbar;
 mod r#type;
 
+pub use dark_mode::*;
+pub use flags::*;
 pub use init::*;
+pub use placement::*;
 pub use state::*;
+pub use taskbar::*;
 
 use std::sync::{Arc, Mutex, MutexGuard};
 

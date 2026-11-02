@@ -120,6 +120,12 @@ impl Error for CreateWindowError {
 	}
 }
 
+impl From<InvalidInput> for CreateWindowError {
+	fn from(value: InvalidInput) -> Self {
+		Self::InvalidAttribute(value)
+	}
+}
+
 #[derive(Debug)]
 pub struct InvalidInput {
 	reason: &'static str,

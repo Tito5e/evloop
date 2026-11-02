@@ -284,6 +284,7 @@ impl WindowFlags {
 		}
 	}
 
+	#[allow(clippy::not_unsafe_ptr_arg_deref)]
 	pub fn adjust_rect(self, hwnd: HWND, mut rect: RECT) -> Result<RECT, io::Error> {
 		unsafe {
 			let mut style = GetWindowLongW(hwnd, GWL_STYLE) as u32;
@@ -321,6 +322,7 @@ impl WindowFlags {
 		PhysicalSize::new(outer_x as _, outer_y as _)
 	}
 
+	#[allow(clippy::not_unsafe_ptr_arg_deref)]
 	pub fn set_size(self, hwnd: HWND, size: PhysicalSize) {
 		unsafe {
 			let adjust_size = self.adjust_size(hwnd, size);

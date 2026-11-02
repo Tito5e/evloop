@@ -9,6 +9,7 @@ mod window_proc;
 pub use active::*;
 pub use cross_thread::*;
 pub use runner::*;
+pub use window_proc::*;
 
 use std::{
 	ffi::c_void,
@@ -98,7 +99,7 @@ impl EventLoop {
 		};
 
 		self.runner.loop_destroyed();
-		self.runner.data_transfer().flush_clipboard_blocking();
+		//self.runner.data_transfer().flush_clipboard_blocking();
 
 		self.runner.reset_runner();
 
@@ -126,7 +127,7 @@ impl EventLoop {
 
 		if let Some(code) = self.runner.exit_code() {
 			self.runner.loop_destroyed();
-			self.runner.data_transfer().flush_clipboard_blocking();
+			//self.runner.data_transfer().flush_clipboard_blocking();
 
 			self.runner.reset_runner();
 			PumpStatus::Exit(code)

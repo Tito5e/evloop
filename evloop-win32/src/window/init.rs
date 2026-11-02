@@ -34,8 +34,8 @@ use windows_sys::Win32::{
 };
 
 use crate::{
-	event_loop::EventLoopRunner,
-	ime::ImeContext,
+	event_loop::{EventLoopRunner, WindowUserData, public_window_callback},
+	input::{ImeContext, KeyEventBuilder},
 	sys::{
 		self,
 		dpi::{dpi_to_scale_factor, enable_non_client_dpi_scaling},
@@ -94,8 +94,8 @@ impl InitData<'_> {
 		}
 	}
 
-	unsafe fn create_window_data(&self, win: &Window) -> WindowData {
-		WindowData {
+	unsafe fn create_window_data(&self, win: &Window) -> WindowUserData {
+		WindowUserData {
 			window_state: win.window_state.clone(),
 			event_loop_runner: self.runner.clone(),
 			key_event_builder: KeyEventBuilder::default(),

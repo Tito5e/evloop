@@ -10,6 +10,7 @@ use windows_sys::Win32::Foundation::HWND;
 use crate::{
 	event::WindowEvent,
 	event_loop::{Event, EventLoopRunner},
+	input::KeyEventBuilder,
 	window::WindowState,
 };
 

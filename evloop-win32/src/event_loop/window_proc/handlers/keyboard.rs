@@ -6,6 +6,7 @@ use windows_sys::Win32::{
 use crate::{
 	event::WindowEvent::ModifiersChanged,
 	event_loop::window_proc::{message::WindowMessage, user_data::WindowUserData},
+	input::LAYOUT_CACHE,
 	sys::proc_result::ProcResult,
 };
 

@@ -29,6 +29,7 @@ const DARK_THEME_NAME: PCWSTR = w!("DarkMode_Explorer");
 
 const LIGHT_THEME_NAME: PCWSTR = w!("");
 
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub fn try_theme(hwnd: HWND, preferred_theme: Option<Theme>, refresh_title_bar: bool) -> Theme {
 	if *DARK_MODE_SUPPORTED {
 		let is_dark_mode = match preferred_theme {
