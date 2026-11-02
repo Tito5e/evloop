@@ -7,6 +7,7 @@ mod wait;
 mod window_proc;
 
 pub use active::*;
+pub use attributes::*;
 pub use cross_thread::*;
 pub use runner::*;
 pub use window_proc::*;
@@ -21,7 +22,10 @@ use std::{
 	time::Duration,
 };
 
-use evloop_core::{error::EventLoopError, event_loop::PumpStatus};
+use evloop_core::{
+	error::EventLoopError,
+	event_loop::{ControlFlow, PumpStatus},
+};
 use windows_sys::Win32::{
 	System::Threading::GetCurrentThreadId,
 	UI::WindowsAndMessaging::{DispatchMessageW, MSG, PM_REMOVE, PeekMessageW, TranslateMessage},
@@ -30,7 +34,6 @@ use windows_sys::Win32::{
 use crate::{
 	application::ApplicationHandler,
 	event_loop::{
-		attributes::EventLoopAttributes,
 		thread_proc::{create_event_target_window, insert_event_target_window_userdata},
 		wait::wait_for_messages_impl,
 	},
@@ -192,6 +195,18 @@ impl EventLoop {
 		let result = self.run_app_on_demand(&mut app);
 		drop(app);
 		result
+	}
+
+	fn active_loop(&self) -> &ActiveEventLoop {
+		ActiveEventLoop::from_ref(&self.runner)
+	}
+
+	pub fn create_proxy(&self) -> EventLoopProxy {
+		self.active_loop().create_proxy()
+	}
+
+	pub fn set_control_flow(&self, control_flow: ControlFlow) {
+		self.active_loop().set_control_flow(control_flow);
 	}
 }
 

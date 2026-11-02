@@ -3,9 +3,9 @@
 
 #[macro_use]
 mod sys;
-mod application;
+pub mod application;
 //mod data_transfer;
-mod event;
+pub mod event;
 pub mod event_loop;
 mod input;
 pub mod keyboard;

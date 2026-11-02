@@ -5,30 +5,23 @@ use std::{
 	collections::VecDeque,
 	mem, panic,
 	rc::Rc,
-	sync::{Arc, Mutex},
 	time::Instant,
 };
 
 use evloop_core::{
-	data_transfer::DataTransferId,
 	event::EvloopEvent,
 	event_loop::{ControlFlow, StartCause},
 	window::WindowId,
 };
-use geometry_types::PhysicalSize;
 use windows_sys::Win32::{
 	Foundation::HWND,
-	UI::{
-		Input::KeyboardAndMouse::GetFocus,
-		WindowsAndMessaging::{GWL_USERDATA, GetForegroundWindow},
-	},
+	UI::{Input::KeyboardAndMouse::GetFocus, WindowsAndMessaging::GetForegroundWindow},
 };
 
 use crate::{
 	application::ApplicationHandler,
-	event::{SurfaceSizeWriter, WindowEvent},
-	event_loop::{EventLoopThreadExecutor, WindowUserData, active::ActiveEventLoop},
-	sys::window_long::get_window_long,
+	event::WindowEvent,
+	event_loop::{EventLoopThreadExecutor, active::ActiveEventLoop},
 };
 
 type EventHandler = Cell<Option<&'static mut (dyn ApplicationHandler + 'static)>>;
@@ -171,8 +164,16 @@ impl EventLoopRunner {
 		}
 	}
 
+	pub fn set_control_flow(&self, control_flow: ControlFlow) {
+		self.control_flow.set(control_flow)
+	}
+
 	pub fn control_flow(&self) -> ControlFlow {
 		self.control_flow.get()
+	}
+
+	pub fn set_exit_code(&self, code: i32) {
+		self.exit.set(Some(code))
 	}
 
 	pub fn exit_code(&self) -> Option<i32> {
@@ -337,6 +338,9 @@ impl EventLoopRunner {
 			}
 		};
 		self.call_event_handler(|app, event_loop| app.enter_events(event_loop, start_cause));
+		if init {
+			self.call_event_handler(|app, event_loop| app.started(event_loop, start_cause));
+		}
 		self.dispatch_buffered_events();
 	}
 }
@@ -360,7 +364,7 @@ pub(crate) enum RunnerState {
 #[derive(Debug, Clone)]
 pub(crate) enum Event {
 	Window { window_id: WindowId, event: WindowEvent },
-	BufferedScaleFactorChanged(HWND, f64, PhysicalSize),
+	BufferedScaleFactorChanged(HWND, f64),
 	// FIXME(Tito5e): [UPSTREAM] Coalesce these into a flag (or similar) instead of handling them as events.
 	// https://github.com/rust-windowing/winit/pull/3687
 	WakeUp,
@@ -369,14 +373,9 @@ pub(crate) enum Event {
 impl Event {
 	pub fn buffer_scale_factor(self) -> Self {
 		match self {
-			Self::Window {
-				event: WindowEvent::ScaleFactorChanged { scale_factor, surface_size_writer },
-				window_id,
-			} => Event::BufferedScaleFactorChanged(
-				window_id.into_raw() as HWND,
-				scale_factor,
-				surface_size_writer.surface_size().unwrap(),
-			),
+			Self::Window { event: WindowEvent::ScaleFactorChanged(scale_factor), window_id } => {
+				Event::BufferedScaleFactorChanged(window_id.into_raw() as HWND, scale_factor)
+			}
 			event => event,
 		}
 	}
@@ -384,31 +383,12 @@ impl Event {
 	pub fn dispatch_event(self, app: &mut dyn ApplicationHandler, event_loop: &ActiveEventLoop) {
 		match self {
 			Self::Window { window_id, event } => app.window_event(event_loop, window_id, event),
-			Self::BufferedScaleFactorChanged(window, scale_factor, new_surface_size) => {
-				let user_new_surface_size = Arc::new(Mutex::new(new_surface_size));
+			Self::BufferedScaleFactorChanged(window, scale_factor) => {
 				app.window_event(
 					event_loop,
 					WindowId::from_raw(window as usize),
-					WindowEvent::ScaleFactorChanged {
-						scale_factor,
-						surface_size_writer: SurfaceSizeWriter::new(Arc::downgrade(
-							&user_new_surface_size,
-						)),
-					},
+					WindowEvent::ScaleFactorChanged(scale_factor),
 				);
-
-				let surface_size = *user_new_surface_size.lock().unwrap();
-
-				drop(user_new_surface_size);
-
-				if surface_size != new_surface_size {
-					let window_flags = unsafe {
-						let userdata = get_window_long(window, GWL_USERDATA) as *mut WindowUserData;
-						(*userdata).window_state_lock().window_flags
-					};
-
-					window_flags.set_size(window, surface_size);
-				}
 			}
 			Self::WakeUp => app.evloop_event(event_loop, EvloopEvent::ProxyWakeUp),
 		}

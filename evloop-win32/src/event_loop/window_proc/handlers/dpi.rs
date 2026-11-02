@@ -10,7 +10,7 @@ use windows_sys::Win32::{
 };
 
 use crate::{
-	event::{SurfaceSizeWriter, WindowEvent},
+	event::WindowEvent,
 	event_loop::window_proc::message::WindowMessage,
 	sys::{dpi::dpi_to_scale_factor, msg_params::loword, proc_result::ProcResult},
 	window::{WindowFlags, WindowState, get_inner_rect},
@@ -58,17 +58,7 @@ pub(crate) fn on_wm_dpichanged(m: &WindowMessage<'_>, result: &mut ProcResult) {
 		false => old_physical_surface_size,
 	};
 
-	let new_surface_size = Arc::new(Mutex::new(new_physical_surface_size));
-	userdata.send_window_event(
-		window,
-		WindowEvent::ScaleFactorChanged {
-			scale_factor: new_scale_factor,
-			surface_size_writer: SurfaceSizeWriter::new(Arc::downgrade(&new_surface_size)),
-		},
-	);
-
-	let new_physical_surface_size = *new_surface_size.lock().unwrap();
-	drop(new_surface_size);
+	userdata.send_window_event(window, WindowEvent::ScaleFactorChanged(new_scale_factor));
 
 	{
 		let window_state = userdata.window_state_lock();

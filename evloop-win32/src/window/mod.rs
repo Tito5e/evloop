@@ -14,23 +14,32 @@ mod status;
 mod taskbar;
 mod r#type;
 
+pub use attributes::*;
 pub use dark_mode::*;
 pub use flags::*;
 pub use init::*;
 pub use placement::*;
 pub use state::*;
+pub use status::*;
 pub use taskbar::*;
 
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::{
+	ptr,
+	sync::{Arc, Mutex, MutexGuard},
+};
 
 use evloop_core::{error::CreateWindowError, window::WindowId};
-use windows_sys::Win32::{Foundation::HWND, UI::WindowsAndMessaging::PostMessageW};
+use windows_sys::Win32::{
+	Foundation::HWND,
+	Graphics::Gdi::{RDW_INTERNALPAINT, RedrawWindow},
+	UI::WindowsAndMessaging::PostMessageW,
+};
 
 use crate::{
 	event_loop::{ActiveEventLoop, EventLoopThreadExecutor},
 	monitor::Fullscreen,
 	sys::message_id::DESTROY_MSG_ID,
-	window::{attributes::WindowAttributes, rwh::SyncWindowHandle, r#type::WindowType},
+	window::{rwh::SyncWindowHandle, r#type::WindowType},
 };
 
 #[derive(Debug)]

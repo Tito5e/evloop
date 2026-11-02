@@ -205,7 +205,6 @@ pub(crate) unsafe fn init(
 	let is_popup = match attributes.window_type {
 		WindowType::Window => false,
 		WindowType::Popup => true,
-		_ => panic!("Unknown WindowType"),
 	};
 
 	let anchored = is_popup || attributes.positioner.is_some();

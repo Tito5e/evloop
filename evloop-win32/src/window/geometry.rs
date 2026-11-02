@@ -178,7 +178,7 @@ impl Window {
 
 		self.set_outer_position(Position::Logical(origin));
 		if size != current_size {
-			let _ = self.request_surface_size(Size::Logical(size));
+			self.request_surface_size(Size::Logical(size));
 		}
 	}
 }
