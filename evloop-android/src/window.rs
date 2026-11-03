@@ -1,10 +1,10 @@
 use std::sync::Mutex;
 
-use crate::RedrawRequester;
 use crate::event_loop::ActiveEventLoop;
+use crate::{RedrawRequester, content_rect};
 use android_activity::{AndroidApp, ConfigurationRef, Rect};
 use evloop_core::{error::CreateWindowError, ime::ImeCapabilities};
-use geometry_types::PhysicalSize;
+use geometry_types::{PhysicalBounds, PhysicalSize};
 use raw_window_handle::{
 	AndroidDisplayHandle, AndroidNdkWindowHandle, DisplayHandle, HandleError, HasDisplayHandle,
 	HasWindowHandle, RawDisplayHandle, RawWindowHandle, WindowHandle,
@@ -29,10 +29,6 @@ impl Window {
 		self.app.config()
 	}
 
-	pub(crate) fn content_rect(&self) -> Rect {
-		self.app.content_rect()
-	}
-
 	fn raw_window_handle_rwh_06(&self) -> Result<RawWindowHandle, HandleError> {
 		if let Some(native_window) = self.app.native_window() {
 			let ptr = native_window.ptr().cast();
@@ -40,7 +36,7 @@ impl Window {
 		} else {
 			tracing::error!(
 				"Cannot get the native window, it's null and will always be null before \
-                AppicationHandler::surface_available and after ApplicationHandler::surface_lost. \
+                ApplicationHandler::surface_available and after ApplicationHandler::surface_lost. \
                 Make sure you only call this function between those events."
 			);
 			Err(HandleError::Unavailable)
@@ -51,11 +47,11 @@ impl Window {
 		Ok(RawDisplayHandle::Android(AndroidDisplayHandle::new()))
 	}
 
-	pub fn inner_size(&self) -> PhysicalSize {
-		self.outer_size()
+	pub fn content_rect(&self) -> PhysicalBounds {
+		content_rect(&self.app)
 	}
 
-	pub fn outer_size(&self) -> PhysicalSize {
+	pub fn surface_size(&self) -> PhysicalSize {
 		screen_size(&self.app)
 	}
 

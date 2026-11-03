@@ -214,6 +214,7 @@ fn main_thread_id() -> u32 {
 	static mut MAIN_THREAD_ID: u32 = 0;
 
 	#[unsafe(link_section = ".CRT$XCU")]
+	#[used]
 	static INIT_MAIN_THREAD_ID: unsafe extern "C" fn() = {
 		unsafe extern "C" fn initer() {
 			unsafe {

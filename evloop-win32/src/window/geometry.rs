@@ -5,7 +5,7 @@ use evloop_core::{
 	error::OsError,
 	window::WindowPositioner,
 };
-use geometry_types::{PhysicalPosition, PhysicalSize};
+use geometry_types::{PhysicalBounds, PhysicalPosition, PhysicalSize};
 use windows_sys::Win32::{
 	Foundation::{POINT, RECT},
 	Graphics::Gdi::{InvalidateRgn, ScreenToClient},
@@ -73,6 +73,11 @@ impl Window {
 			panic!("Unexpected GetClientRect failure")
 		}
 		PhysicalPosition::new(rect.left, rect.top)
+	}
+
+	pub fn content_rect(&self) -> PhysicalBounds {
+		let size = self.surface_size();
+		PhysicalBounds::lrtb(0, size.width as i32, 0, size.height as i32)
 	}
 
 	pub fn outer_size(&self) -> PhysicalSize {
