@@ -53,3 +53,15 @@ impl Size {
 		}
 	}
 }
+
+impl From<LogicalSize> for Size {
+	fn from(value: LogicalSize) -> Self {
+		Self::Logical(value)
+	}
+}
+
+impl From<PhysicalSize> for Size {
+	fn from(value: PhysicalSize) -> Self {
+		Self::Physical(value)
+	}
+}
