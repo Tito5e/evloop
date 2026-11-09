@@ -55,42 +55,39 @@ impl Window {
 			let vm_ptr = self.app.vm_as_ptr() as *mut jni::sys::JavaVM;
 			let activity_ptr = self.app.activity_as_ptr() as jni::sys::jobject;
 			if vm_ptr.is_null() || activity_ptr.is_null() {
-				panic!("このAPIは専用のActivityを必要とします")
+				panic!("Error")
 			}
 
 			let vm = JavaVM::from_raw(vm_ptr);
 
-			let result = vm
-				.attach_current_thread(|env| -> jni::errors::Result<PhysicalBounds> {
-					let activity = JObject::from_raw(env, activity_ptr);
+			vm.attach_current_thread(|env| -> jni::errors::Result<PhysicalBounds> {
+				let activity = env.as_cast_raw::<jni::refs::Global<JObject>>(&activity_ptr)?;
 
-					let result_val = env.call_method(
-						&activity,
-						jni_str!("getSafeAreaInsets"),
-						jni_sig!("()[I"),
-						&[],
-					)?;
+				let result_val = env.call_method(
+					&activity,
+					jni_str!("getSafeAreaInsets"),
+					jni_sig!("()[I"),
+					&[],
+				)?;
 
-					let result_obj = result_val.l()?;
-					if result_obj.is_null() {
-						return Err(jni::errors::Error::NullPtr("getSafeAreaInsets returned null"));
-					}
+				let result_obj = result_val.l()?;
+				if result_obj.is_null() {
+					return Err(jni::errors::Error::NullPtr("getSafeAreaInsets returned null"));
+				}
 
-					let int_array = JIntArray::from_raw(env, result_obj.as_raw());
+				let int_array = JIntArray::from_raw(env, result_obj.as_raw());
 
-					let mut elements = [0i32; 4];
-					env.get_int_array_region(int_array, 0, &mut elements)?;
+				let mut elements = [0i32; 4];
+				int_array.get_region(env, 0, &mut elements)?;
 
-					Ok(PhysicalBounds {
-						left: elements[2],
-						right: elements[3],
-						top: elements[0],
-						bottom: elements[1],
-					})
+				Ok(PhysicalBounds {
+					left: elements[2],
+					right: elements[3],
+					top: elements[0],
+					bottom: elements[1],
 				})
-				.unwrap();
-
-			result
+			})
+			.expect("Error msg")
 		}
 	}
 
