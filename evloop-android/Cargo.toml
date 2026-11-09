@@ -14,3 +14,5 @@ geometry-types.workspace = true
 android-activity = { version = "0.6.1", features = ["native-activity"] }
 tracing = "0.1.44"
 smol_str = "0.3.6"
+
+jni = "0.22.4"
