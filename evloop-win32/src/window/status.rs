@@ -100,7 +100,7 @@ impl Window {
 			let _ = &window;
 			WindowState::set_window_flags(window_state.lock().unwrap(), window.hwnd(), |f| {
 				f.set(WindowFlags::MINIMIZABLE, buttons.contains(WindowButtons::MINIMIZE));
-				f.set(WindowFlags::MAXIMIZED, buttons.contains(WindowButtons::MAXIMIZE));
+				f.set(WindowFlags::MAXIMIZABLE, buttons.contains(WindowButtons::MAXIMIZE));
 				f.set(WindowFlags::CLOSABLE, buttons.contains(WindowButtons::CLOSE))
 			});
 		});
