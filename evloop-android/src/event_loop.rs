@@ -1,10 +1,8 @@
-use crate::application::ApplicationHandler;
-use crate::event::{KeyEvent, WindowEvent};
-use crate::window::Window;
-use crate::{
-	HAS_FOCUS, RedrawRequester, SharedFlag, content_rect, keycodes, min_timeout, platform,
-	scale_factor,
-};
+use std::cell::Cell;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::{Duration, Instant};
+
 use android_activity::input::{InputEvent, KeyAction, Keycode, MotionAction};
 use android_activity::ndk::configuration::UiModeNight;
 use android_activity::{AndroidApp, AndroidAppWaker, InputStatus, MainEvent, PollEvent};
@@ -14,11 +12,15 @@ use evloop_core::event_loop::{ControlFlow, PumpStatus, StartCause};
 use evloop_core::pointer::{ButtonSource, FingerId, Force, PointerKind, PointerSource};
 use evloop_core::window::Theme;
 use geometry_types::{PhysicalPosition, PhysicalSize};
-use std::cell::Cell;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::{Duration, Instant};
 use tracing::trace;
+
+use crate::application::ApplicationHandler;
+use crate::event::{KeyEvent, WindowEvent};
+use crate::window::Window;
+use crate::{
+	HAS_FOCUS, RedrawRequester, SharedFlag, content_rect, keycodes, min_timeout, platform,
+	scale_factor,
+};
 
 pub struct EventLoop {
 	android_app: AndroidApp,

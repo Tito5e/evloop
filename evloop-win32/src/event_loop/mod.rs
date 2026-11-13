@@ -6,12 +6,6 @@ mod thread_proc;
 mod wait;
 mod window_proc;
 
-pub use active::*;
-pub use attributes::*;
-pub use cross_thread::*;
-pub use runner::*;
-pub use window_proc::*;
-
 use std::{
 	ffi::c_void,
 	mem,
@@ -22,10 +16,15 @@ use std::{
 	time::Duration,
 };
 
+pub use active::*;
+pub use attributes::*;
+pub use cross_thread::*;
 use evloop_core::{
 	error::EventLoopError,
 	event_loop::{ControlFlow, PumpStatus},
 };
+pub use runner::*;
+pub use window_proc::*;
 use windows_sys::Win32::{
 	System::Threading::GetCurrentThreadId,
 	UI::WindowsAndMessaging::{DispatchMessageW, MSG, PM_REMOVE, PeekMessageW, TranslateMessage},

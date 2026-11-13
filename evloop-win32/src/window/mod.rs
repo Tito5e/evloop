@@ -14,21 +14,20 @@ mod status;
 mod taskbar;
 mod r#type;
 
+use std::{
+	ptr,
+	sync::{Arc, Mutex, MutexGuard},
+};
+
 pub use attributes::*;
 pub use dark_mode::*;
+use evloop_core::{error::CreateWindowError, window::WindowId};
 pub use flags::*;
 pub use init::*;
 pub use placement::*;
 pub use state::*;
 pub use status::*;
 pub use taskbar::*;
-
-use std::{
-	ptr,
-	sync::{Arc, Mutex, MutexGuard},
-};
-
-use evloop_core::{error::CreateWindowError, window::WindowId};
 use windows_sys::Win32::{
 	Foundation::HWND,
 	Graphics::Gdi::{RDW_INTERNALPAINT, RedrawWindow},

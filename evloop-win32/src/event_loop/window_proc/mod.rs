@@ -3,7 +3,6 @@ mod message;
 mod user_data;
 
 pub use user_data::*;
-
 use windows_sys::Win32::{
 	Foundation::{HWND, LPARAM, LRESULT, WPARAM},
 	UI::{

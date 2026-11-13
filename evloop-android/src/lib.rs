@@ -7,12 +7,13 @@ pub mod keycodes;
 pub mod platform;
 pub mod window;
 
-use geometry_types::PhysicalBounds;
-
-use crate::platform::activity::{AndroidApp, AndroidAppWaker};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
+
+use geometry_types::PhysicalBounds;
+
+use crate::platform::activity::{AndroidApp, AndroidAppWaker};
 
 static HAS_FOCUS: AtomicBool = AtomicBool::new(true);
 

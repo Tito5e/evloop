@@ -1,7 +1,5 @@
 use std::sync::Mutex;
 
-use crate::event_loop::ActiveEventLoop;
-use crate::{RedrawRequester, content_rect};
 use android_activity::{AndroidApp, ConfigurationRef, Rect};
 use evloop_core::{error::CreateWindowError, ime::ImeCapabilities};
 use geometry_types::{PhysicalBounds, PhysicalSize};
@@ -12,6 +10,9 @@ use raw_window_handle::{
 	AndroidDisplayHandle, AndroidNdkWindowHandle, DisplayHandle, HandleError, HasDisplayHandle,
 	HasWindowHandle, RawDisplayHandle, RawWindowHandle, WindowHandle,
 };
+
+use crate::event_loop::ActiveEventLoop;
+use crate::{RedrawRequester, content_rect};
 
 pub struct Window {
 	app: AndroidApp,

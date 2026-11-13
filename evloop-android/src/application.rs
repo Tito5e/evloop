@@ -1,8 +1,9 @@
+use evloop_core::event::EvloopEvent;
+use evloop_core::event_loop::StartCause;
+
 use crate::event::WindowEvent;
 use crate::event_loop::ActiveEventLoop;
 use crate::window::Window;
-use evloop_core::event::EvloopEvent;
-use evloop_core::event_loop::StartCause;
 
 pub trait ApplicationHandler {
 	fn started(&mut self, event_loop: &ActiveEventLoop, cause: StartCause);
