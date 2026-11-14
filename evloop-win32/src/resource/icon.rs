@@ -191,25 +191,24 @@ impl Icon {
 	/// [`from_resource`]: Self::from_resource
 	///
 	/// ```rust,no_run
-	/// use winit::platform::windows::WinIcon;
+	/// use evloop_win32::resource::Icon;
 	///
-	/// assert!(WinIcon::from_resource_name("app", None).is_ok());
-	/// assert!(WinIcon::from_resource(1, None).is_ok());
-	/// assert!(WinIcon::from_resource(27, None).is_ok());
-	/// assert!(WinIcon::from_resource_name("27", None).is_err());
-	/// assert!(WinIcon::from_resource_name("0027", None).is_err());
+	/// assert!(Icon::from_resource_name("app", None).is_ok());
+	/// assert!(Icon::from_resource(1, None).is_ok());
+	/// assert!(Icon::from_resource(27, None).is_ok());
+	/// assert!(Icon::from_resource_name("27", None).is_err());
+	/// assert!(Icon::from_resource_name("0027", None).is_err());
 	/// ```
 	///
 	/// While `0` cannot be used as an ordinal id (see [`from_resource`]), it can be used as a
 	/// name:
 	///
-	/// [`from_resource`]: IconExtWindows::from_resource
+	/// [`from_resource`]: Self::from_resource
 	///
 	/// ```rust,no_run
-	/// # use winit::platform::windows::WinIcon;
-	/// # use winit::icon::Icon;
-	/// assert!(WinIcon::from_resource_name("0", None).is_ok());
-	/// assert!(WinIcon::from_resource(0, None).is_err());
+	/// # use evloop_win32::resource::Icon;
+	/// assert!(Icon::from_resource_name("0", None).is_ok());
+	/// assert!(Icon::from_resource(0, None).is_err());
 	/// ```
 	pub fn from_resource_name(
 		resource_name: &str,

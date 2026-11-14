@@ -1,7 +1,7 @@
 use core::fmt;
 use std::{error::Error, fmt::Display};
 
-use crate::data_transfer::DataTransferId;
+use crate::data_transfer::{DataTransferId, TypeHint};
 
 #[derive(Debug)]
 pub enum EventLoopError {
@@ -91,6 +91,8 @@ impl fmt::Display for NotSupportedError {
 	}
 }
 
+impl Error for NotSupportedError {}
+
 #[derive(Debug)]
 pub enum CreateWindowError {
 	InvalidAttribute(InvalidInput),
@@ -145,12 +147,21 @@ impl fmt::Display for InvalidInput {
 
 impl Error for InvalidInput {}
 
+/// Error of a data transfer request (see `evloop_core::data_transfer`).
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum TransferError {
+	/// The operation is meaningful but not available here (e.g. drag and drop on Android, or a
+	/// `Raw` format the platform cannot offer).
 	NotSupported(NotSupportedError),
+	/// The id does not identify a live transfer: unknown, or outdated (the clipboard changed, the
+	/// drag ended).
 	UnknownTransfer(DataTransferId),
-	Failed,
+	/// The transfer does not offer this format (it is not in `available_formats`).
+	FormatUnavailable(TypeHint),
+	/// The clipboard can only be read while a window of the application has focus.
+	NoFocusedWindow,
+	/// The data could not be read or written.
 	Os(OsError),
 }
 
@@ -161,7 +172,8 @@ impl fmt::Display for TransferError {
 			Self::UnknownTransfer(id) => {
 				write!(f, "Unknown data transfer with ID {}", id.into_raw())
 			}
-			Self::Failed => write!(f, "Transfer request failed"),
+			Self::FormatUnavailable(hint) => write!(f, "The transfer does not offer {hint:?}"),
+			Self::NoFocusedWindow => write!(f, "No window of the application has focus"),
 			Self::Os(err) => err.fmt(f),
 		}
 	}
@@ -222,5 +234,48 @@ impl fmt::Display for ImeRequestError {
 			ImeRequestError::AlreadyEnabled => write!(f, "ime is already enabled."),
 			ImeRequestError::NotSupported => write!(f, "ime is not supported."),
 		}
+	}
+}
+
+impl Error for ImeRequestError {}
+
+/// Error returned by requests that a backend may be unable to fulfil.
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum RequestError {
+	/// The request is meaningful but cannot be performed in the current environment.
+	NotSupported(NotSupportedError),
+	/// The request was valid but has been ignored by the system (for example, a clipboard read
+	/// while no window has focus).
+	Ignored,
+	/// The underlying OS call failed.
+	Os(OsError),
+}
+
+impl fmt::Display for RequestError {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		match self {
+			Self::NotSupported(err) => err.fmt(f),
+			Self::Ignored => write!(f, "The request was ignored"),
+			Self::Os(err) => err.fmt(f),
+		}
+	}
+}
+
+impl Error for RequestError {
+	fn source(&self) -> Option<&(dyn Error + 'static)> {
+		if let Self::Os(err) = self { err.source() } else { None }
+	}
+}
+
+impl From<NotSupportedError> for RequestError {
+	fn from(value: NotSupportedError) -> Self {
+		Self::NotSupported(value)
+	}
+}
+
+impl From<OsError> for RequestError {
+	fn from(value: OsError) -> Self {
+		Self::Os(value)
 	}
 }

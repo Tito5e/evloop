@@ -165,7 +165,7 @@ impl Window {
 		unsafe { RedrawWindow(self.hwnd(), ptr::null(), ptr::null_mut(), RDW_INTERNALPAINT) };
 	}
 
-	pub fn request_user_attension(&self, request_type: Option<UserAttentionType>) {
+	pub fn request_user_attention(&self, request_type: Option<UserAttentionType>) {
 		let window = self.window;
 		let active_window_handle = unsafe { GetActiveWindow() };
 		if window.hwnd() == active_window_handle {

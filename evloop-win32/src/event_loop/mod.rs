@@ -21,7 +21,7 @@ pub use attributes::*;
 pub use cross_thread::*;
 use evloop_core::{
 	error::EventLoopError,
-	event_loop::{ControlFlow, PumpStatus},
+	event_loop::{ControlFlow, DeviceEventStrategy, PumpStatus},
 };
 pub use runner::*;
 pub use window_proc::*;
@@ -36,6 +36,7 @@ use crate::{
 		thread_proc::{create_event_target_window, insert_event_target_window_userdata},
 		wait::wait_for_messages_impl,
 	},
+	input::raw_input::register_all_mouse_and_keyboards_for_raw_input,
 	sys::dpi::become_dpi_aware,
 };
 
@@ -56,8 +57,11 @@ impl EventLoop {
 
 		if !attributes.any_thread && thread_id != main_thread_id() {
 			// ほかのプラットフォームではメインスレッド以外からイベントループを作成できないことも多いので、安全のためにデフォルトではパニックにする
-			// TODO: メッセージ
-			panic!();
+			panic!(
+				"Initializing the event loop outside of the main thread is a significant \
+				 cross-platform compatibility hazard. If you absolutely need to create an \
+				 EventLoop on a different thread, set `EventLoopAttributes::any_thread` to `true`."
+			);
 		}
 
 		if attributes.dpi_aware {
@@ -69,6 +73,11 @@ impl EventLoop {
 		let runner_shared = Rc::new(EventLoopRunner::new(thread_id, thread_msg_target));
 
 		insert_event_target_window_userdata(thread_msg_target, runner_shared.clone());
+
+		register_all_mouse_and_keyboards_for_raw_input(
+			thread_msg_target,
+			DeviceEventStrategy::default(),
+		);
 
 		Ok(Self {
 			runner: runner_shared,
@@ -204,8 +213,18 @@ impl EventLoop {
 		self.active_loop().create_proxy()
 	}
 
+	/// See [`ActiveEventLoop::owned_display_handle`].
+	pub fn owned_display_handle(&self) -> OwnedDisplayHandle {
+		self.active_loop().owned_display_handle()
+	}
+
 	pub fn set_control_flow(&self, control_flow: ControlFlow) {
 		self.active_loop().set_control_flow(control_flow);
+	}
+
+	/// See [`ActiveEventLoop::set_device_event_strategy`].
+	pub fn set_device_event_strategy(&self, strategy: DeviceEventStrategy) {
+		self.active_loop().set_device_event_strategy(strategy);
 	}
 }
 

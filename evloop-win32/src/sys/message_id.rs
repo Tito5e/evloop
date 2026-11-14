@@ -50,3 +50,7 @@ pub(crate) static SET_RETAIN_STATE_ON_SIZE_MSG_ID: LazyMessageId =
 
 /// broadcasts this message to all top-level windows <https://docs.microsoft.com/en-us/windows/win32/shell/taskbar#taskbar-creation-notification>
 pub(crate) static TASKBAR_CREATED: LazyMessageId = LazyMessageId::new("TaskbarCreated\0");
+
+/// Posted by `Window::request_ime_update` to report the start (`wparam = 1`) or end (`wparam = 0`)
+/// of an IME session from the window's thread.
+pub(crate) static IME_SESSION_MSG_ID: LazyMessageId = LazyMessageId::new("Evloop::ImeSession\0");

@@ -1,3 +1,4 @@
+mod raw_input;
 mod user_data;
 
 use std::{mem, ptr, rc::Rc, sync::LazyLock};
@@ -5,6 +6,7 @@ use std::{mem, ptr, rc::Rc, sync::LazyLock};
 use windows_sys::Win32::{
 	Foundation::{HWND, LPARAM, LRESULT, WPARAM},
 	Graphics::Gdi::{RDW_INTERNALPAINT, RedrawWindow, ValidateRect},
+	UI::Input::HRAWINPUT,
 	UI::WindowsAndMessaging::{
 		CS_HREDRAW, CS_VREDRAW, CreateWindowExW, DefWindowProcW, GWL_STYLE, GWL_USERDATA,
 		RegisterClassExW, WM_INPUT, WM_NCDESTROY, WM_PAINT, WNDCLASSEXW, WS_EX_LAYERED,
@@ -109,7 +111,10 @@ unsafe extern "system" fn thread_event_target_callback(
 			ValidateRect(window, ptr::null());
 			DefWindowProcW(window, msg, wparam, lparam)
 		},
-		WM_INPUT => unsafe { DefWindowProcW(window, msg, wparam, lparam) },
+		WM_INPUT => {
+			raw_input::handle_raw_input(&userdata.event_loop_runner, lparam as HRAWINPUT);
+			unsafe { DefWindowProcW(window, msg, wparam, lparam) }
+		}
 		_ if msg == USER_EVENT_MSG_ID.get() => {
 			userdata.send_wakeup();
 			0

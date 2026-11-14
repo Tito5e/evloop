@@ -86,7 +86,7 @@ unsafe extern "system" fn monitor_enum_proc(
 	true.into() // continue enumeration
 }
 
-pub fn available_monitors() -> VecDeque<MonitorHandle> {
+pub(crate) fn available_monitors() -> VecDeque<MonitorHandle> {
 	let mut monitors: VecDeque<MonitorHandle> = VecDeque::new();
 	unsafe {
 		EnumDisplayMonitors(
@@ -99,13 +99,13 @@ pub fn available_monitors() -> VecDeque<MonitorHandle> {
 	monitors
 }
 
-pub fn primary_monitor() -> MonitorHandle {
+pub(crate) fn primary_monitor() -> MonitorHandle {
 	const ORIGIN: POINT = POINT { x: 0, y: 0 };
 	let hmonitor = unsafe { MonitorFromPoint(ORIGIN, MONITOR_DEFAULTTOPRIMARY) };
 	MonitorHandle::new(hmonitor)
 }
 
-pub fn current_monitor(hwnd: HWND) -> MonitorHandle {
+pub(crate) fn current_monitor(hwnd: HWND) -> MonitorHandle {
 	let hmonitor = unsafe { MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST) };
 	MonitorHandle::new(hmonitor)
 }
@@ -119,7 +119,7 @@ pub(crate) fn get_monitor_info(hmonitor: HMONITOR) -> Result<MONITORINFOEXW, io:
 	if status == false.into() { Err(io::Error::last_os_error()) } else { Ok(monitor_info) }
 }
 
-pub enum VideoModeHandleIter {
+pub(crate) enum VideoModeHandleIter {
 	Empty(Empty<VideoModeHandle>),
 	Handles(IntoIter<VideoModeHandle>),
 }

@@ -9,7 +9,7 @@ use std::{
 };
 
 use evloop_core::{
-	event::EvloopEvent,
+	event::{DeviceId, EvloopEvent},
 	event_loop::{ControlFlow, StartCause},
 	window::WindowId,
 };
@@ -20,7 +20,7 @@ use windows_sys::Win32::{
 
 use crate::{
 	application::ApplicationHandler,
-	event::WindowEvent,
+	event::{DeviceEvent, WindowEvent},
 	event_loop::{EventLoopThreadExecutor, active::ActiveEventLoop},
 };
 
@@ -240,6 +240,18 @@ impl EventLoopRunner {
 		}
 	}
 
+	/// Dispatches `event` to the application right now, for events whose result must be read
+	/// back before returning to the OS. Returns `false` (and drops the event) when the
+	/// application cannot be called synchronously, e.g. while it is already handling an event.
+	pub(crate) fn dispatch_synchronously(self: &Rc<Self>, event: Event) -> bool {
+		if self.should_buffer() {
+			return false;
+		}
+		self.call_event_handler(|app, event_loop| event.dispatch_event(app, event_loop));
+		self.dispatch_buffered_events();
+		true
+	}
+
 	pub(crate) fn loop_destroyed(self: &Rc<Self>) {
 		self.move_state_to(RunnerState::Destroyed);
 	}
@@ -364,6 +376,7 @@ pub(crate) enum RunnerState {
 #[derive(Debug, Clone)]
 pub(crate) enum Event {
 	Window { window_id: WindowId, event: WindowEvent },
+	Device { device_id: Option<DeviceId>, event: DeviceEvent },
 	BufferedScaleFactorChanged(HWND, f64),
 	// FIXME(Tito5e): [UPSTREAM] Coalesce these into a flag (or similar) instead of handling them as events.
 	// https://github.com/rust-windowing/winit/pull/3687
@@ -383,6 +396,7 @@ impl Event {
 	pub fn dispatch_event(self, app: &mut dyn ApplicationHandler, event_loop: &ActiveEventLoop) {
 		match self {
 			Self::Window { window_id, event } => app.window_event(event_loop, window_id, event),
+			Self::Device { device_id, event } => app.device_event(event_loop, device_id, event),
 			Self::BufferedScaleFactorChanged(window, scale_factor) => {
 				app.window_event(
 					event_loop,

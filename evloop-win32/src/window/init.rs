@@ -152,7 +152,6 @@ impl InitData<'_> {
 		}
 
 		win.set_cursor(attributes.cursor);
-		win.set_visible(attributes.visible);
 
 		win.set_enabled_buttons(attributes.enabled_buttons);
 
@@ -175,6 +174,10 @@ impl InitData<'_> {
 		if let Some(position) = attributes.position {
 			win.set_outer_position(position);
 		}
+
+		// Show the window only once it has its requested size and position, so it never appears
+		// (nor reports `Resized`) at the `CW_USEDEFAULT` size it was created with.
+		win.set_visible(attributes.visible);
 
 		win.set_system_backdrop(self.attributes.backdrop_type);
 

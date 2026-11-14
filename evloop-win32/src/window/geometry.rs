@@ -3,7 +3,7 @@ use std::{mem, ptr, sync::Arc};
 use evloop_core::{
 	dpi::{Position, Size},
 	error::OsError,
-	window::WindowPositioner,
+	window::{PhysicalInsets, WindowPositioner},
 };
 use geometry_types::{PhysicalBounds, PhysicalPosition, PhysicalSize};
 use windows_sys::Win32::{
@@ -49,7 +49,7 @@ impl Window {
 		self.thread_executor.execute_in_thread(move || {
 			let _ = &window;
 			WindowState::set_window_flags(window_state.lock().unwrap(), window.hwnd(), |f| {
-				f.set(WindowFlags::MAXIMIZABLE, false)
+				f.set(WindowFlags::MAXIMIZED, false)
 			});
 		});
 
@@ -75,9 +75,22 @@ impl Window {
 		PhysicalPosition::new(rect.left, rect.top)
 	}
 
+	/// The insets of the surface that are covered by system UI. Windows draws no system UI over
+	/// the client area, so this is always [`PhysicalInsets::ZERO`].
+	pub fn safe_area(&self) -> PhysicalInsets {
+		PhysicalInsets::ZERO
+	}
+
+	/// The part of the surface not covered by system UI: [`Self::safe_area`] removed from the
+	/// surface. On Windows this is the whole client area.
 	pub fn content_rect(&self) -> PhysicalBounds {
-		let size = self.surface_size();
-		PhysicalBounds::lrtb(0, size.width as i32, 0, size.height as i32)
+		self.safe_area().inset_bounds(self.surface_size())
+	}
+
+	/// The insets of the surface covered by an on-screen keyboard. The Windows touch keyboard is
+	/// not tracked yet, so this is always [`PhysicalInsets::ZERO`].
+	pub fn ime_occlusion(&self) -> PhysicalInsets {
+		PhysicalInsets::ZERO
 	}
 
 	pub fn outer_size(&self) -> PhysicalSize {
@@ -101,7 +114,7 @@ impl Window {
 			self.thread_executor.execute_in_thread(move || {
 				let _ = &window;
 				WindowState::set_window_flags(window_state.lock().unwrap(), window.hwnd(), |f| {
-					f.set(WindowFlags::MAXIMIZABLE, false)
+					f.set(WindowFlags::MAXIMIZED, false)
 				});
 			});
 		}

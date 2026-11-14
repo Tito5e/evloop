@@ -6,9 +6,9 @@ use windows_sys::{
 		System::Threading::GetCurrentThreadId,
 		UI::WindowsAndMessaging::{
 			EnumThreadWindows, GW_OWNER, GWL_USERDATA, GetWindow, HTCAPTION, MINMAXINFO,
-			NCCALCSIZE_PARAMS, PostMessageW, SIZE_MAXIMIZED, SWP_NOMOVE, SWP_NOSIZE, WINDOWPOS,
-			WM_LBUTTONUP, WM_MOUSEMOVE, WMSZ_BOTTOM, WMSZ_BOTTOMLEFT, WMSZ_BOTTOMRIGHT, WMSZ_LEFT,
-			WMSZ_RIGHT, WMSZ_TOP, WMSZ_TOPLEFT, WMSZ_TOPRIGHT,
+			NCCALCSIZE_PARAMS, PostMessageW, SIZE_MAXIMIZED, SIZE_MINIMIZED, SWP_NOMOVE,
+			SWP_NOSIZE, WINDOWPOS, WM_LBUTTONUP, WM_MOUSEMOVE, WMSZ_BOTTOM, WMSZ_BOTTOMLEFT,
+			WMSZ_BOTTOMRIGHT, WMSZ_LEFT, WMSZ_RIGHT, WMSZ_TOP, WMSZ_TOPLEFT, WMSZ_TOPRIGHT,
 		},
 	},
 	core::BOOL,
@@ -186,11 +186,30 @@ pub(crate) fn on_wm_size(m: &WindowMessage<'_>, result: &mut ProcResult) {
 		}
 	}
 
+	let minimized = wparam == SIZE_MINIMIZED as usize;
+	let occlusion_changed = {
+		let mut state = userdata.window_state_lock();
+		let changed = state.occluded != minimized;
+		state.occluded = minimized;
+		changed
+	};
+	// Report un-occlusion before the resize that follows a restore, so the application resumes
+	// rendering before it sees the new size.
+	if occlusion_changed && !minimized {
+		userdata.send_window_event(window, WindowEvent::Occluded(false));
+	}
+
 	let mut state = userdata.window_state_lock();
 	if (w, h) != (0, 0) && physical_size != state.surface_size {
 		state.surface_size = physical_size;
 		drop(state);
 		userdata.send_window_event(window, WindowEvent::Resized(physical_size));
+	} else {
+		drop(state);
+	}
+
+	if occlusion_changed && minimized {
+		userdata.send_window_event(window, WindowEvent::Occluded(true));
 	}
 	*result = ProcResult::Value(0);
 }

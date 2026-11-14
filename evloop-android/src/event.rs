@@ -1,4 +1,7 @@
-use android_activity::input::Keycode;
+use crate::{
+	glue::input::Keycode,
+	platform::{ImeAction, TextInputState},
+};
 use evloop_core::data_transfer::DataTransferId;
 use evloop_core::data_transfer::DndAction;
 use evloop_core::event::DeviceId;
@@ -14,8 +17,7 @@ use evloop_core::pointer::PointerKind;
 use evloop_core::pointer::PointerSource;
 use evloop_core::pointer::ScrollSource;
 use evloop_core::pointer::TouchPhase;
-use evloop_core::window::Theme;
-use geometry_types::PhysicalBounds;
+use evloop_core::window::{PhysicalInsets, Theme};
 use geometry_types::PhysicalPosition;
 use geometry_types::PhysicalSize;
 use smol_str::SmolStr;
@@ -23,7 +25,6 @@ use smol_str::SmolStr;
 #[derive(Debug, Clone, PartialEq)]
 pub enum WindowEvent {
 	Resized(PhysicalSize),
-	ContentRectChanged(PhysicalBounds),
 	Moved(PhysicalPosition),
 	CloseRequested,
 	Destroyed,
@@ -98,6 +99,21 @@ pub enum WindowEvent {
 		id: DataTransferId,
 	},
 	Occluded(bool),
+	/// The safe area (`Window::safe_area`) changed. Not emitted when only the surface size
+	/// changes: query `Window::safe_area` in `surface_available` for the initial value.
+	SafeAreaChanged(PhysicalInsets),
+	/// The area covered by the on-screen keyboard (`Window::ime_occlusion`) changed. Use this to
+	/// keep the edited text visible.
+	ImeOcclusionChanged(PhysicalInsets),
+	/// Any window inset changed (see `Window::insets`). Android-specific.
+	InsetsChanged,
+	/// The on-screen keyboard was shown or hidden, independently of the IME session (the user
+	/// can hide it while the session stays enabled). Android-specific.
+	SoftKeyboardVisibilityChanged(bool),
+	/// The action key of the on-screen keyboard was pressed. Android-specific.
+	ImeAction(ImeAction),
+	/// The IME's raw editor state changed. Android-specific; `Ime` events are derived from it.
+	TextInputStateChanged(TextInputState),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]

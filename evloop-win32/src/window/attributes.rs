@@ -28,7 +28,6 @@ pub struct WindowAttributes {
 	pub maximized: bool,
 	pub visible: bool,
 	pub transparent: bool,
-	pub blur: bool,
 	pub decorations: bool,
 	pub window_icon: Option<Icon>,
 	pub preferred_theme: Option<Theme>,
@@ -74,7 +73,6 @@ impl Default for WindowAttributes {
 			maximized: false,
 			visible: true,
 			transparent: false,
-			blur: false,
 			decorations: true,
 			window_icon: None,
 			preferred_theme: None,
@@ -186,13 +184,6 @@ impl WindowAttributes {
 	#[must_use]
 	pub fn with_transparent(mut self, transparent: bool) -> Self {
 		self.transparent = transparent;
-		self
-	}
-
-	#[inline]
-	#[must_use]
-	pub fn with_blur(mut self, blur: bool) -> Self {
-		self.blur = blur;
 		self
 	}
 

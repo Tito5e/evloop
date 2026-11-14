@@ -81,8 +81,7 @@ fn is_numpad_specific(vk: VIRTUAL_KEY) -> bool {
 			| VK_NUMPAD7
 			| VK_NUMPAD8
 			| VK_NUMPAD9
-			| VK_ADD
-			| VK_SUBTRACT
+			| VK_ADD | VK_SUBTRACT
 			| VK_DIVIDE
 			| VK_DECIMAL
 			| VK_SEPARATOR

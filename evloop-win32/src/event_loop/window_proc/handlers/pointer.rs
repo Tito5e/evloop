@@ -43,8 +43,7 @@ pub(crate) fn on_pointer_event(m: &WindowMessage<'_>, result: &mut ProcResult) {
 		Some(GetPointerFrameInfoHistory),
 		Some(SkipPointerFrameMessages),
 		Some(GetPointerDeviceRects),
-	) =
-		(*GET_POINTER_FRAME_INFO_HISTORY, *SKIP_POINTER_FRAME_MESSAGES, *GET_POINTER_DEVICE_RECTS)
+	) = (*GET_POINTER_FRAME_INFO_HISTORY, *SKIP_POINTER_FRAME_MESSAGES, *GET_POINTER_DEVICE_RECTS)
 	{
 		let pointer_id = loword(wparam as u32) as u32;
 		let mut entries_count = 0u32;

@@ -1,84 +1,30 @@
-#![cfg(target_os = "android")] // FIXME(Tito5e): Hack for allow compiling on all platforms.
+//! The Android backend of evloop (GameActivity).
+//!
+//! Everything except [`text`] only exists on Android. `text` is pure std code and is also built on
+//! other hosts so that it can be unit-tested there.
 
+mod text;
+
+#[cfg(target_os = "android")]
 pub mod application;
+#[cfg(target_os = "android")]
 pub mod event;
+#[cfg(target_os = "android")]
 pub mod event_loop;
-pub mod keycodes;
+#[cfg(target_os = "android")]
+mod glue;
+#[cfg(target_os = "android")]
+mod ime;
+#[cfg(target_os = "android")]
+pub(crate) mod keycodes;
+#[cfg(target_os = "android")]
 pub mod platform;
+#[cfg(target_os = "android")]
+mod shared;
+#[cfg(target_os = "android")]
+mod sys;
+#[cfg(target_os = "android")]
 pub mod window;
 
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Duration;
-
-use geometry_types::PhysicalBounds;
-
-use crate::platform::activity::{AndroidApp, AndroidAppWaker};
-
-static HAS_FOCUS: AtomicBool = AtomicBool::new(true);
-
-#[derive(Clone)]
-struct SharedFlagSetter {
-	flag: Arc<AtomicBool>,
-}
-
-impl SharedFlagSetter {
-	fn set(&self) -> bool {
-		self.flag.compare_exchange(false, true, Ordering::AcqRel, Ordering::Relaxed).is_ok()
-	}
-}
-
-struct SharedFlag {
-	flag: Arc<AtomicBool>,
-}
-
-impl SharedFlag {
-	fn new() -> Self {
-		Self { flag: Arc::new(AtomicBool::new(false)) }
-	}
-
-	fn setter(&self) -> SharedFlagSetter {
-		SharedFlagSetter { flag: self.flag.clone() }
-	}
-
-	fn get_and_reset(&self) -> bool {
-		self.flag.swap(false, Ordering::AcqRel)
-	}
-}
-
-#[derive(Clone)]
-struct RedrawRequester {
-	flag: SharedFlagSetter,
-	waker: AndroidAppWaker,
-}
-
-impl RedrawRequester {
-	fn new(flag: &SharedFlag, waker: AndroidAppWaker) -> Self {
-		Self { flag: flag.setter(), waker }
-	}
-
-	fn request_redraw(&self) {
-		if self.flag.set() {
-			self.waker.wake();
-		}
-	}
-}
-
-fn content_rect(app: &AndroidApp) -> PhysicalBounds {
-	let content_rect = app.content_rect();
-
-	PhysicalBounds::lrtb(
-		content_rect.left,
-		content_rect.right,
-		content_rect.top,
-		content_rect.bottom,
-	)
-}
-
-fn scale_factor(app: &AndroidApp) -> f64 {
-	app.config().density().map(|dpi| dpi as f64 / 160.).unwrap_or(1.0)
-}
-
-fn min_timeout(a: Option<Duration>, b: Option<Duration>) -> Option<Duration> {
-	a.map_or(b, |a_timeout| b.map_or(Some(a_timeout), |b_timeout| Some(a_timeout.min(b_timeout))))
-}
+#[cfg(target_os = "android")]
+pub(crate) use shared::*;

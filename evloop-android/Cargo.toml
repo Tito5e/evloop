@@ -4,15 +4,27 @@ version.workspace = true
 repository.workspace = true
 license.workspace = true
 edition.workspace = true
+build = "build.rs"
+# The vendored GameActivity native sources are part of the package.
+include = ["src/**/*", "build.rs", "third_party/**/*", "java/**/*", "Cargo.toml"]
 
 [target.'cfg(target_os = "android")'.dependencies]
 evloop-core.workspace = true
 
 raw-window-handle.workspace = true
 geometry-types.workspace = true
+tracing.workspace = true
 
-android-activity = { version = "0.6.1", features = ["native-activity"] }
-tracing = "0.1.44"
 smol_str = "0.3.6"
-
 jni = "0.22.4"
+ndk = { version = "0.9.0", default-features = false }
+ndk-sys = "0.6.0"
+ndk-context = "0.1.1"
+libc = "0.2.139"
+
+[build-dependencies]
+cc = { version = "1.0.42", features = ["parallel"] }
+
+[[example]]
+name = "smoke"
+crate-type = ["cdylib"]

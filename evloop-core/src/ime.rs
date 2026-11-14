@@ -1,3 +1,38 @@
+//! Input Method Editor (IME) data types.
+//!
+//! Every backend exposes the same two methods on its `Window`:
+//!
+//! ```ignore
+//! fn request_ime_update(&self, request: ImeRequest) -> Result<(), ImeRequestError>;
+//! fn ime_capabilities(&self) -> Option<ImeCapabilities>;
+//! ```
+//!
+//! # Model
+//!
+//! evloop uses a *preedit / commit* model on every platform: the system sends the text being
+//! composed ([`Ime::Preedit`]) and the text that was finalized ([`Ime::Commit`]); the application
+//! owns the edited text. Platforms whose native model synchronizes the whole editor state
+//! (Android `InputConnection`) translate that state into these events, and may additionally
+//! expose their raw state as a platform-specific event.
+//!
+//! # Session semantics
+//!
+//! - [`ImeRequest::Enable`] starts a text input session for the window. On platforms with an
+//!   on-screen keyboard it also asks for the keyboard to be shown. Enabling an already enabled
+//!   session fails with [`ImeRequestError::AlreadyEnabled`](crate::error::ImeRequestError).
+//! - [`ImeRequest::Update`] updates only the data covered by the capabilities declared when the
+//!   session was enabled; other data is ignored.
+//! - [`ImeRequest::Disable`] ends the session and hides the on-screen keyboard, if any.
+//! - [`Ime::Enabled`] / [`Ime::Disabled`] report the **start and end of the session**. They do
+//!   not report on-screen keyboard visibility: a user may hide the keyboard while the session
+//!   stays enabled. Keyboard visibility is reported separately (`WindowEvent::ImeOcclusionChanged`
+//!   and platform-specific events).
+//!
+//! # Offsets
+//!
+//! All text offsets in this module ([`Ime::Preedit`] cursor range, [`Ime::DeleteSurrounding`],
+//! [`ImeSurroundingText`]) are **UTF-8 byte offsets**, whatever the platform uses natively.
+
 use bitflags::bitflags;
 
 use crate::{

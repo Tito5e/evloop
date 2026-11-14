@@ -1,36 +1,34 @@
-use std::sync::Mutex;
-
-use android_activity::{AndroidApp, ConfigurationRef, Rect};
-use evloop_core::{error::CreateWindowError, ime::ImeCapabilities};
+use evloop_core::{
+	error::ImeRequestError,
+	ime::{ImeCapabilities, ImeRequest},
+	window::PhysicalInsets,
+};
 use geometry_types::{PhysicalBounds, PhysicalSize};
-use jni::objects::{JIntArray, JObject};
-use jni::vm::JavaVM;
-use jni::{jni_sig, jni_str};
+use ndk_sys::ARect;
 use raw_window_handle::{
 	AndroidDisplayHandle, AndroidNdkWindowHandle, DisplayHandle, HandleError, HasDisplayHandle,
 	HasWindowHandle, RawDisplayHandle, RawWindowHandle, WindowHandle,
 };
 
-use crate::event_loop::ActiveEventLoop;
-use crate::{RedrawRequester, content_rect};
+use crate::{
+	RedrawRequester,
+	event_loop::ActiveEventLoop,
+	glue::AndroidApp,
+	platform::InsetType,
+	sys::{
+		GAMECOMMON_INSETS_TYPE_DISPLAY_CUTOUT, GAMECOMMON_INSETS_TYPE_IME,
+		GAMECOMMON_INSETS_TYPE_SYSTEM_BARS,
+	},
+};
 
 pub struct Window {
 	app: AndroidApp,
-	ime_capabilities: Mutex<Option<ImeCapabilities>>,
 	redraw_requester: RedrawRequester,
 }
 
 impl Window {
 	pub(crate) fn new(event_loop: &ActiveEventLoop) -> Self {
-		Self {
-			app: event_loop.app.clone(),
-			ime_capabilities: Default::default(),
-			redraw_requester: event_loop.redraw_requester.clone(),
-		}
-	}
-
-	pub(crate) fn config(&self) -> ConfigurationRef {
-		self.app.config()
+		Self { app: event_loop.app.clone(), redraw_requester: event_loop.redraw_requester.clone() }
 	}
 
 	fn raw_window_handle_rwh_06(&self) -> Result<RawWindowHandle, HandleError> {
@@ -51,51 +49,54 @@ impl Window {
 		Ok(RawDisplayHandle::Android(AndroidDisplayHandle::new()))
 	}
 
+	/// The insets covered by system UI: system bars (status / navigation / caption) and the
+	/// display cutout.
+	pub fn safe_area(&self) -> PhysicalInsets {
+		safe_area(&self.app)
+	}
+
+	/// The part of the surface not covered by system UI: [`Self::safe_area`] removed from the
+	/// surface.
 	pub fn content_rect(&self) -> PhysicalBounds {
-		unsafe {
-			let vm_ptr = self.app.vm_as_ptr() as *mut jni::sys::JavaVM;
-			let activity_ptr = self.app.activity_as_ptr() as jni::sys::jobject;
-			if vm_ptr.is_null() || activity_ptr.is_null() {
-				panic!("Error")
-			}
+		content_rect(&self.app)
+	}
 
-			let vm = JavaVM::from_raw(vm_ptr);
+	/// The insets covered by the on-screen keyboard.
+	pub fn ime_occlusion(&self) -> PhysicalInsets {
+		ime_occlusion(&self.app)
+	}
 
-			vm.attach_current_thread(|env| -> jni::errors::Result<PhysicalBounds> {
-				let activity = env.as_cast_raw::<jni::refs::Global<JObject>>(&activity_ptr)?;
+	/// The insets of one kind (`WindowInsetsCompat.Type`). Android-specific.
+	pub fn insets(&self, ty: InsetType) -> PhysicalInsets {
+		to_insets(self.app.insets(ty.to_raw()))
+	}
 
-				let result_val = env.call_method(
-					&activity,
-					jni_str!("getSafeAreaInsets"),
-					jni_sig!("()[I"),
-					&[],
-				)?;
+	/// Starts, updates or ends the IME session. See `evloop_core::ime` for the semantics shared by
+	/// all backends.
+	///
+	/// On Android:
+	/// - `Enable` shows the on-screen keyboard and `Disable` hides it. To show the keyboard again
+	///   after the user hid it, disable and enable the session again.
+	/// - `hint_and_purpose` selects the keyboard (`EditorInfo.inputType`).
+	/// - `surrounding_text` is mirrored in the IME's editor, which improves suggestions and lets
+	///   the IME delete text it did not type.
+	/// - `cursor_area` is accepted but has no effect.
+	/// - Events are delivered asynchronously, after this call returns.
+	pub fn request_ime_update(&self, request: ImeRequest) -> Result<(), ImeRequestError> {
+		crate::ime::request(&self.app, request)
+	}
 
-				let result_obj = result_val.l()?;
-				if result_obj.is_null() {
-					return Err(jni::errors::Error::NullPtr("getSafeAreaInsets returned null"));
-				}
-
-				let int_array = JIntArray::from_raw(env, result_obj.as_raw());
-
-				let mut elements = [0i32; 4];
-				int_array.get_region(env, 0, &mut elements)?;
-
-				Ok(PhysicalBounds {
-					left: elements[2],
-					right: elements[3],
-					top: elements[0],
-					bottom: elements[1],
-				})
-			})
-			.expect("Error msg")
-		}
+	/// The capabilities of the current IME session, or `None` when no session is enabled.
+	pub fn ime_capabilities(&self) -> Option<ImeCapabilities> {
+		self.app.ime_session().capabilities()
 	}
 
 	pub fn surface_size(&self) -> PhysicalSize {
-		screen_size(&self.app)
+		surface_size(&self.app)
 	}
 
+	/// Does nothing on Android: presentation is paced by the surface itself. Kept so that
+	/// rendering code can call it on every backend.
 	pub fn pre_present_notify(&self) {}
 
 	pub fn request_redraw(&self) {
@@ -103,20 +104,30 @@ impl Window {
 	}
 
 	pub fn scale_factor(&self) -> f64 {
-		scale_factor(&self.app)
+		crate::scale_factor(&self.app)
 	}
 }
 
-fn screen_size(app: &AndroidApp) -> PhysicalSize {
+fn to_insets(rect: ARect) -> PhysicalInsets {
+	let clamp = |v: i32| v.max(0) as u32;
+	PhysicalInsets::new(clamp(rect.top), clamp(rect.left), clamp(rect.bottom), clamp(rect.right))
+}
+
+pub(crate) fn safe_area(app: &AndroidApp) -> PhysicalInsets {
+	to_insets(app.insets(GAMECOMMON_INSETS_TYPE_SYSTEM_BARS))
+		.union(to_insets(app.insets(GAMECOMMON_INSETS_TYPE_DISPLAY_CUTOUT)))
+}
+
+pub(crate) fn content_rect(app: &AndroidApp) -> PhysicalBounds {
+	safe_area(app).inset_bounds(surface_size(app))
+}
+
+fn surface_size(app: &AndroidApp) -> PhysicalSize {
 	if let Some(native_window) = app.native_window().as_ref() {
 		PhysicalSize::new(native_window.width() as _, native_window.height() as _)
 	} else {
 		PhysicalSize::new(0, 0)
 	}
-}
-
-fn scale_factor(app: &AndroidApp) -> f64 {
-	app.config().density().map(|dpi| dpi as f64 / 160.).unwrap_or(1.0)
 }
 
 impl HasDisplayHandle for Window {
@@ -131,4 +142,8 @@ impl HasWindowHandle for Window {
 		let raw = self.raw_window_handle_rwh_06()?;
 		unsafe { Ok(WindowHandle::borrow_raw(raw)) }
 	}
+}
+
+pub(crate) fn ime_occlusion(app: &AndroidApp) -> PhysicalInsets {
+	to_insets(app.insets(GAMECOMMON_INSETS_TYPE_IME))
 }

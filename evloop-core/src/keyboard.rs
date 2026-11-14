@@ -1,10 +1,6 @@
-use core::fmt;
-
 use bitflags::bitflags;
 pub use keyboard_types::{Code as KeyCode, Location as KeyLocation, NamedKey};
 use smol_str::SmolStr;
-
-use crate::{event::ElementState, keyboard};
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ModifiersKeyState {
@@ -25,20 +21,6 @@ bitflags! {
 		const LMETA    = 0b0100_0000;
 		const RMETA    = 0b1000_0000;
 	}
-}
-
-// TODO: move to each backend crate
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct KeyEvent {
-	// pub raw_key: NativeKey,
-	pub physical_key: PhysicalKey,
-	pub logical_key: keyboard::LogicalKey,
-	pub text: Option<SmolStr>,
-	pub location: keyboard::KeyLocation,
-	pub state: ElementState,
-	pub repeat: bool,
-	pub text_with_all_modifiers: Option<SmolStr>,
-	pub key_without_modifiers: keyboard::LogicalKey,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

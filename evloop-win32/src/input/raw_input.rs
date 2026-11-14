@@ -2,6 +2,7 @@ use std::{mem, ptr};
 
 use evloop_core::{
 	event::ElementState,
+	event_loop::DeviceEventStrategy,
 	keyboard::{KeyCode, PhysicalKey},
 };
 use windows_sys::Win32::{
@@ -28,7 +29,7 @@ use windows_sys::Win32::{
 };
 
 use crate::{
-	input::{DeviceEvents, keyboard::scancode_to_physicalkey},
+	input::keyboard::scancode_to_physicalkey,
 	sys::{bits::has_flag, wide::decode_wide},
 };
 
@@ -136,15 +137,15 @@ pub fn register_raw_input_devices(devices: &[RAWINPUTDEVICE]) -> bool {
 
 pub fn register_all_mouse_and_keyboards_for_raw_input(
 	mut window_handle: HWND,
-	filter: DeviceEvents,
+	filter: DeviceEventStrategy,
 ) -> bool {
 	let flags = match filter {
-		DeviceEvents::Never => {
+		DeviceEventStrategy::Never => {
 			window_handle = ptr::null_mut();
 			RIDEV_REMOVE
 		}
-		DeviceEvents::WhenFocused => RIDEV_DEVNOTIFY,
-		DeviceEvents::Always => RIDEV_DEVNOTIFY | RIDEV_INPUTSINK,
+		DeviceEventStrategy::WhenFocused => RIDEV_DEVNOTIFY,
+		DeviceEventStrategy::Always => RIDEV_DEVNOTIFY | RIDEV_INPUTSINK,
 	};
 
 	let devices: [RAWINPUTDEVICE; 2] = [

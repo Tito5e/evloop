@@ -5,7 +5,9 @@ mod dwm;
 mod flags;
 mod fullscreen;
 mod geometry;
+mod ime;
 mod init;
+mod interaction;
 mod placement;
 mod pointer;
 mod rwh;
@@ -75,10 +77,8 @@ impl Window {
 		self.window_state.lock().unwrap()
 	}
 
-	pub fn set_blur(&self, _blur: bool) {
-		// TODO: [UPSTREAM] ?
-	}
-
+	/// Does nothing on Windows: presentation is not throttled by a compositor frame callback, so
+	/// there is nothing to notify. Kept so that rendering code can call it on every backend.
 	pub fn pre_present_notify(&self) {}
 }
 

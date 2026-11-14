@@ -285,7 +285,20 @@ impl WindowFlags {
 	}
 
 	#[allow(clippy::not_unsafe_ptr_arg_deref)]
-	pub fn adjust_rect(self, hwnd: HWND, mut rect: RECT) -> Result<RECT, io::Error> {
+	pub fn adjust_rect(self, hwnd: HWND, rect: RECT) -> Result<RECT, io::Error> {
+		self.adjust_rect_for_dpi(hwnd, rect, None)
+	}
+
+	/// Like [`Self::adjust_rect`], but computes the frame for `dpi` instead of the window's
+	/// current DPI (used while the DPI is about to change). Falls back to the current DPI when
+	/// `AdjustWindowRectExForDpi` is unavailable.
+	#[allow(clippy::not_unsafe_ptr_arg_deref)]
+	pub fn adjust_rect_for_dpi(
+		self,
+		hwnd: HWND,
+		mut rect: RECT,
+		dpi: Option<u32>,
+	) -> Result<RECT, io::Error> {
 		unsafe {
 			let mut style = GetWindowLongW(hwnd, GWL_STYLE) as u32;
 			let style_ex = GetWindowLongW(hwnd, GWL_EXSTYLE) as u32;
@@ -301,7 +314,7 @@ impl WindowFlags {
 				if let (Some(get_dpi_for_window), Some(adjust_window_rect_ex_for_dpi)) =
 					(*GET_DPI_FOR_WINDOW, *ADJUST_WINDOW_RECT_EX_FOR_DPI)
 				{
-					let dpi = get_dpi_for_window(hwnd);
+					let dpi = dpi.unwrap_or_else(|| get_dpi_for_window(hwnd));
 					adjust_window_rect_ex_for_dpi(&mut rect, style, b_menu.into(), style_ex, dpi)
 				} else {
 					AdjustWindowRectEx(&mut rect, style, b_menu.into(), style_ex)

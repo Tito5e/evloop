@@ -1,5 +1,8 @@
-use android_activity::AndroidApp;
-use android_activity::input::{KeyAction, KeyEvent, KeyMapChar, Keycode};
+use crate::glue::{
+	AndroidApp,
+	input::{KeyAction, KeyEvent, Keycode},
+	key_map::KeyMapChar,
+};
 use evloop_core::keyboard::{KeyCode, KeyLocation, LogicalKey, NamedKey, PhysicalKey};
 
 // from winit-android
@@ -167,7 +170,7 @@ pub fn to_physical_key(keycode: Keycode) -> PhysicalKey {
 		Keycode::Refresh => KeyCode::BrowserRefresh,
 		Keycode::Search => KeyCode::BrowserSearch,
 
-		keycode => return PhysicalKey::Unidentified,
+		_ => return PhysicalKey::Unidentified,
 	})
 }
 
@@ -178,7 +181,7 @@ pub fn to_physical_key(keycode: Keycode) -> PhysicalKey {
 /// character or a dead key that can be combined with the next key press.
 pub fn character_map_and_combine_key(
 	app: &AndroidApp,
-	key_event: &KeyEvent<'_>,
+	key_event: &KeyEvent,
 	combining_accent: &mut Option<char>,
 ) -> Option<KeyMapChar> {
 	let device_id = key_event.device_id();
@@ -236,7 +239,7 @@ pub fn character_map_and_combine_key(
 }
 
 pub fn to_logical(key_char: Option<KeyMapChar>, keycode: Keycode) -> LogicalKey {
-	use android_activity::input::Keycode::*;
+	use crate::glue::input::Keycode::*;
 
 	match key_char {
 		Some(KeyMapChar::Unicode(c)) => LogicalKey::Character(smol_str::SmolStr::from_iter([c])),
@@ -493,7 +496,7 @@ pub fn to_logical(key_char: Option<KeyMapChar>, keycode: Keycode) -> LogicalKey 
 }
 
 pub fn to_location(keycode: Keycode) -> KeyLocation {
-	use android_activity::input::Keycode::*;
+	use crate::glue::input::Keycode::*;
 
 	match keycode {
 		AltLeft => KeyLocation::Left,

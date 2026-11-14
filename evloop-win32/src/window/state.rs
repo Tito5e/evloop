@@ -69,6 +69,9 @@ pub(crate) struct WindowState {
 
 	pub dragging: bool,
 
+	/// Whether `WindowEvent::Occluded(true)` was the last occlusion state reported.
+	pub occluded: bool,
+
 	pub skip_taskbar: bool,
 
 	pub use_system_wheel_speed: bool,
@@ -121,6 +124,7 @@ impl WindowState {
 			redraw_requested: false,
 
 			dragging: false,
+			occluded: false,
 
 			skip_taskbar: false,
 

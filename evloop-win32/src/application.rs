@@ -1,6 +1,13 @@
-use evloop_core::{event::EvloopEvent, event_loop::StartCause, window::WindowId};
+use evloop_core::{
+	event::{DeviceId, EvloopEvent},
+	event_loop::StartCause,
+	window::WindowId,
+};
 
-use crate::{event::WindowEvent, event_loop::ActiveEventLoop};
+use crate::{
+	event::{DeviceEvent, WindowEvent},
+	event_loop::ActiveEventLoop,
+};
 
 pub trait ApplicationHandler {
 	fn started(&mut self, event_loop: &ActiveEventLoop, cause: StartCause);
@@ -27,6 +34,17 @@ pub trait ApplicationHandler {
 		window_id: WindowId,
 		event: WindowEvent,
 	);
+
+	/// Raw input from a device, independent of any window. Delivery is controlled by
+	/// [`ActiveEventLoop::set_device_event_strategy`].
+	fn device_event(
+		&mut self,
+		event_loop: &ActiveEventLoop,
+		device_id: Option<DeviceId>,
+		event: DeviceEvent,
+	) {
+		let _ = (event_loop, device_id, event);
+	}
 
 	fn evloop_event(&mut self, event_loop: &ActiveEventLoop, event: EvloopEvent) {
 		let _ = (event_loop, event);
@@ -71,6 +89,16 @@ impl<A: ?Sized + ApplicationHandler> ApplicationHandler for &mut A {
 		event: WindowEvent,
 	) {
 		(**self).window_event(event_loop, window_id, event);
+	}
+
+	#[inline]
+	fn device_event(
+		&mut self,
+		event_loop: &ActiveEventLoop,
+		device_id: Option<DeviceId>,
+		event: DeviceEvent,
+	) {
+		(**self).device_event(event_loop, device_id, event);
 	}
 
 	#[inline]

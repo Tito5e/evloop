@@ -8,8 +8,8 @@ use windows_sys::{
 			CreateBitmap, CreateCompatibleBitmap, DeleteObject, GetDC, ReleaseDC, SetBitmapBits,
 		},
 		UI::WindowsAndMessaging::{
-			CreateIconIndirect, DestroyCursor, HCURSOR, HICON, ICONINFO, IDC_APPSTARTING,
-			IDC_ARROW, IDC_CROSS, IDC_HAND, IDC_HELP, IDC_IBEAM, IDC_NO, IDC_SIZEALL, IDC_SIZENESW,
+			CreateIconIndirect, DestroyCursor, HCURSOR, ICONINFO, IDC_APPSTARTING, IDC_ARROW,
+			IDC_CROSS, IDC_HAND, IDC_HELP, IDC_IBEAM, IDC_NO, IDC_SIZEALL, IDC_SIZENESW,
 			IDC_SIZENS, IDC_SIZENWSE, IDC_SIZEWE, IDC_WAIT,
 		},
 	},
@@ -19,7 +19,7 @@ use windows_sys::{
 #[derive(Debug, Clone)]
 pub enum SelectedCursor {
 	Named(CursorIcon),
-	Custom(Arc<RaiiCursor>),
+	Custom(Cursor),
 }
 
 impl Default for SelectedCursor {
@@ -28,6 +28,21 @@ impl Default for SelectedCursor {
 	}
 }
 
+impl From<CursorIcon> for SelectedCursor {
+	fn from(icon: CursorIcon) -> Self {
+		Self::Named(icon)
+	}
+}
+
+impl From<Cursor> for SelectedCursor {
+	fn from(cursor: Cursor) -> Self {
+		Self::Custom(cursor)
+	}
+}
+
+/// A custom cursor image, created with
+/// [`ActiveEventLoop::create_custom_cursor`](crate::event_loop::ActiveEventLoop::create_custom_cursor).
+/// Cheap to clone; the OS resource is released when the last clone is dropped.
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Cursor(pub(crate) Arc<RaiiCursor>);
 
@@ -84,10 +99,14 @@ impl Cursor {
 	pub fn is_animated(&self) -> bool {
 		false
 	}
+
+	pub(crate) fn as_raw_handle(&self) -> HCURSOR {
+		self.0.handle
+	}
 }
 
 #[derive(Debug, Hash, Eq, PartialEq)]
-pub struct RaiiCursor {
+pub(crate) struct RaiiCursor {
 	handle: HCURSOR,
 }
 
@@ -98,12 +117,6 @@ unsafe impl Sync for RaiiCursor {}
 impl Drop for RaiiCursor {
 	fn drop(&mut self) {
 		unsafe { DestroyCursor(self.handle) };
-	}
-}
-
-impl RaiiCursor {
-	pub fn as_raw_handle(&self) -> HICON {
-		self.handle
 	}
 }
 

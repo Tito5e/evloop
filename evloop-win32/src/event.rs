@@ -8,7 +8,7 @@ use evloop_core::{
 	pointer::{
 		ButtonSource, MouseScrollDelta, PointerKind, PointerSource, ScrollSource, TouchPhase,
 	},
-	window::Theme,
+	window::{PhysicalInsets, Theme},
 };
 use geometry_types::{PhysicalPosition, PhysicalSize};
 
@@ -59,6 +59,22 @@ pub enum WindowEvent {
 		primary: bool,
 		button: ButtonSource,
 	},
+	/// The scale factor is about to change to `scale_factor` (the window moved to a monitor with
+	/// a different DPI). Sent from `WM_GETDPISCALEDSIZE`, before [`Self::ScaleFactorChanged`].
+	///
+	/// `surface_size_writer` initially holds the surface size scaled linearly to the new scale
+	/// factor. Write another size to choose the surface size the window gets after the change;
+	/// leave it untouched to let the OS scale the window. The writer is only effective while this
+	/// event is being handled.
+	///
+	/// Only emitted for processes that are Per-Monitor V2 DPI aware, and never while the window
+	/// is maximized or fullscreen. The order is `ScaleFactorChanging` → `ScaleFactorChanged` →
+	/// `Resized`.
+	ScaleFactorChanging {
+		scale_factor: f64,
+		surface_size_writer: SurfaceSizeWriter,
+	},
+	/// The scale factor changed. Followed by `Resized` if the surface size changed.
 	ScaleFactorChanged(f64),
 	ThemeChanged(Theme),
 	RedrawRequested,
@@ -85,6 +101,20 @@ pub enum WindowEvent {
 	OutgoingDragCanceled {
 		id: DataTransferId,
 	},
+	/// The safe area (`Window::safe_area`) changed.
+	///
+	/// Windows draws no system UI over the client area, so the safe area is always zero and this
+	/// event is never emitted. It exists so that the same code handles it on every backend.
+	SafeAreaChanged(PhysicalInsets),
+	/// The area covered by an on-screen keyboard (`Window::ime_occlusion`) changed.
+	///
+	/// The Windows touch keyboard is not tracked yet, so this event is currently never emitted.
+	ImeOcclusionChanged(PhysicalInsets),
+	/// The window became fully hidden from the user (`true`) or visible again (`false`).
+	///
+	/// On Windows this is reported when the window is minimized and restored. Applications can
+	/// stop rendering while occluded.
+	Occluded(bool),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -136,3 +166,10 @@ impl PartialEq for SurfaceSizeWriter {
 }
 
 impl Eq for SurfaceSizeWriter {}
+
+/// Returns a stable identifier (the device interface path) for a device reported in
+/// [`ApplicationHandler::device_event`](crate::application::ApplicationHandler::device_event),
+/// which stays the same across reconnections and reboots.
+pub fn device_persistent_identifier(device_id: DeviceId) -> Option<String> {
+	crate::input::device_persistent_identifier(&device_id)
+}

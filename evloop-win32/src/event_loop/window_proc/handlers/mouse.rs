@@ -4,7 +4,7 @@ use evloop_core::{
 	event::ElementState::{Pressed, Released},
 	pointer::{
 		ButtonSource, MouseButton,
-		MouseScrollDelta::LineDelta,
+		MouseScrollDelta::{LineDelta, PixelDelta},
 		PointerKind::{self, Mouse},
 		PointerSource, ScrollSource, TouchPhase,
 	},
@@ -140,30 +140,32 @@ pub(crate) fn on_wm_mousewheel(m: &WindowMessage<'_>, result: &mut ProcResult) {
 
 	update_modifiers(window, userdata);
 
-	let scroll_lines_multiplier = if userdata.window_state_lock().use_system_wheel_speed {
-		let mut scroll_lines = DEFAULT_SCROLL_LINES_PER_WHEEL_DELTA;
+	let delta = if userdata.window_state_lock().use_system_wheel_speed {
+		let mut scroll_lines: u32 = DEFAULT_SCROLL_LINES_PER_WHEEL_DELTA as u32;
 		let _ = unsafe {
 			SystemParametersInfoW(
 				SPI_GETWHEELSCROLLLINES,
 				0,
-				&mut scroll_lines as *mut isize as *mut c_void,
+				&mut scroll_lines as *mut u32 as *mut c_void,
 				0,
 			)
 		};
-		if scroll_lines as u32 == WHEEL_PAGESCROLL {
-			// TODO: figure out how to handle page scrolls
-			scroll_lines = DEFAULT_SCROLL_LINES_PER_WHEEL_DELTA;
+		if scroll_lines == WHEEL_PAGESCROLL {
+			// "One screen at a time": one notch scrolls by the height of the surface.
+			let page_height = userdata.window_state_lock().surface_size.height as f32;
+			PixelDelta(PhysicalPosition::new(0, (value * page_height).round() as i32))
+		} else {
+			LineDelta(0.0, value * scroll_lines as f32)
 		}
-		scroll_lines
 	} else {
-		1
+		LineDelta(0.0, value)
 	};
 
 	userdata.send_window_event(
 		window,
 		WindowEvent::MouseWheel {
 			device_id: None,
-			delta: LineDelta(0.0, value * scroll_lines_multiplier as f32),
+			delta,
 			phase: TouchPhase::Moved,
 			source: ScrollSource::Unknown,
 		},
