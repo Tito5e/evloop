@@ -1,19 +1,16 @@
 [workspace]
 resolver = "3"
-members = ["evloop*"]
+members = ["crates/evloop-win32"]
 
 [workspace.package]
 edition = "2024"
-license = "MIT or Apache-2.0"
+license = "MIT OR Apache-2.0"
 repository = "https://github.com/Tito5e/evloop.git"
 version = "0.1.0"
 
 [workspace.dependencies]
-evloop = { path = "evloop" }
-evloop-core = { version = "=0.1.0", path = "evloop-core" }
-evloop-win32 = { version = "=0.1.0", path = "evloop-win32" }
-evloop-android = { version = "=0.1.0", path = "evloop-android" }
-
 raw-window-handle = { version = "0.6.2" }
-tracing = { version = "0.1.44" }
+
+tracing = { version = "0.1" }
+
 geometry-types = { version = "0.8.1" }

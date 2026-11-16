@@ -1,0 +1,18 @@
+[package]
+name = "evloop-win32"
+version.workspace = true
+repository.workspace = true
+license.workspace = true
+edition.workspace = true
+
+[target.'cfg(target_os = "windows")'.dependencies]
+geometry-types.workspace = true
+raw-window-handle.workspace = true
+tracing.workspace = true
+
+windows-sys = { version = "0.61.2", features = [
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_System_SystemServices",
+] }
