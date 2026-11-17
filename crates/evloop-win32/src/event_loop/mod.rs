@@ -31,7 +31,7 @@ impl EventLoop {
             return Err(());
         }
 
-        // アプリケーションがDPIを処理できる場合は有効にする
+        // アプリケーションがDPIを処理できる場合は有効にする (通常は有効になる)
         if opts.dpi_aware {
             become_api_aware();
         }
@@ -39,7 +39,7 @@ impl EventLoop {
         let message_window = create_message_window();
         let runner = Rc::new(EventLoopRunner::new(message_window));
 
-        // アプリケーションがraw_inputを処理する場合は有効にする
+        // アプリケーションがraw_inputを処理する場合は有効にする (通常は有効にならない)
         if opts.raw_input {
             register_devices_for_raw_input(message_window);
         }

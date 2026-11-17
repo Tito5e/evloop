@@ -1,5 +1,6 @@
 use std::{
     mem, ptr,
+    rc::Rc,
     sync::{
         atomic::{AtomicU32, Ordering},
         LazyLock,
@@ -16,7 +17,10 @@ use windows_sys::Win32::{
     },
 };
 
-use crate::{encoding::encode_wide, get_instance_handle, get_window_long, set_window_long};
+use crate::{
+    encoding::encode_wide, event_loop::EventLoopRunner, get_instance_handle, get_window_long,
+    set_window_long,
+};
 
 type ExecuteFn = Box<Box<dyn FnMut()>>;
 
@@ -168,4 +172,8 @@ unsafe extern "system" fn message_window_callback(
     }
 
     result
+}
+
+struct MessageWindowState {
+    runner: Rc<EventLoopRunner>,
 }

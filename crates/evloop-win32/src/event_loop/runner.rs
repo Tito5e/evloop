@@ -2,7 +2,7 @@ use core::fmt;
 
 use windows_sys::Win32::Foundation::HWND;
 
-/// アプリケーション全体の実行状態を管理する
+/// イベントループ全体の実行状態を管理する
 pub(super) struct EventLoopRunner {
     pub(super) message_window: HWND,
 }
