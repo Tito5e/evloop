@@ -1,13 +1,16 @@
 #![cfg(target_os = "windows")] // FIXME(Tito5e): Hack for allow compiling on all platforms.
 
+#[macro_use]
+mod dynamic;
+mod dpi;
+mod encoding;
+pub mod event_loop;
+
 use windows_sys::Win32::{
     Foundation::{HMODULE, HWND},
     System::SystemServices::IMAGE_DOS_HEADER,
     UI::WindowsAndMessaging::WINDOW_LONG_PTR_INDEX,
 };
-
-mod encoding;
-pub mod event_loop;
 
 pub(crate) fn get_instance_handle() -> HMODULE {
     unsafe extern "C" {
